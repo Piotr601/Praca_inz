@@ -3,6 +3,11 @@
 # Praca inzynierska / Engineering Thesis
 
 # Libraries:
+import threading
+import time
+
+from os import system, name
+
 import thinkdsp as T_DSP
 import thinkplot as T_PLOT
 from tkinter import *
@@ -15,18 +20,18 @@ A_end = 5
 
 author = 'Piotr'
 
+def clear():
+    _ = system('clear')
+
 # Introduction, basic informations
 def introduction():
     print(f'> Hi, ' + author) 
 
 # Loading audio to program
-def processing():
+def processing(name):
     print(' >>>> Loading <<<< ')
 
-    name = input("Podaj nazwę pliku: ")
-    print(name)
-
-    audio =  T_DSP.read_wave(name + ".wav")
+    audio =  T_DSP.read_wave(name)
     audio.plot()
 
     T_PLOT.config(xlim=[A_start, A_end], xlabel="time(s)", legend=False)
@@ -34,6 +39,7 @@ def processing():
 
     audio_spectrum=audio.make_spectrum()
     audio_spectrum.plot()
+    T_PLOT.config(xlim=[0, 1000])
     T_PLOT.show()
 
 # Function, basic information to analysis
@@ -49,14 +55,45 @@ def processing():
 
 # Main function
 if __name__ == '__main__':
-
-    #window.title("Program do analizy")
-    #window.geometry("1000x800+50+50")
-    #window.resizable(False, False)
-    #window.mainloop()
-
+    clear()
+    name = ""
     introduction()
-    processing()
- #   example()
+
+    while True:
+
+        choose = input("Co chciałbyś zrobić?\n 1) Wczytanie pliku\n 2) Analiza pliku\n 3) Wyjscie\n Twój wybór: ")
+        
+        if choose=='1':
+            while True:
+                try:
+                    name = input("Podaj nazwę pliku: ")
+                    name = name + ".wav"
+                    
+                    file = open(name, 'rb')
+                    break
+                except OSError:
+                    print("Cannot read file |", name ,"| try again")
+                
+
+        elif choose=='2':
+            if name != "":
+                processing(name)
+            else:
+                print("Nie wczytano pliku\n")
+
+        elif choose=='3':
+            exit(0)
+
+        else:
+            print()
+
+        
+
+        #window.title("Program do analizy")
+        #window.geometry("1000x800+50+50")
+        #window.resizable(False, False)
+        #window.mainloop()
+        #x.join()
+        #   example()
 
     
