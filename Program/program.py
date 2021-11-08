@@ -59,28 +59,41 @@ if __name__ == '__main__':
     name = ""
     introduction()
 
+    # MAIN LOOP with program
     while True:
 
         choose = input("Co chciałbyś zrobić?\n 1) Wczytanie pliku\n 2) Analiza pliku\n 3) Wyjscie\n Twój wybór: ")
         
+        # Choosing audio to analysis
         if choose=='1':
+            # Preventing wrong or no audio to analyse
             while True:
                 try:
+                    print("\nDostepne pliki:")
+                    # Printing all audios in folder
+                    _ = system('ls -m *.wav')
                     name = input("Podaj nazwę pliku: ")
-                    name = name + ".wav"
                     
+                    # Preventing eneter a name with format
+                    for x in name:
+                        if name.endswith('.wav'):
+                            name = name
+                        else:
+                            name = name + ".wav"
+
                     file = open(name, 'rb')
                     break
                 except OSError:
                     print("Cannot read file |", name ,"| try again")
                 
-
+        # Analysis audio
         elif choose=='2':
             if name != "":
                 processing(name)
             else:
                 print("Nie wczytano pliku\n")
 
+        # Exit
         elif choose=='3':
             exit(0)
 
