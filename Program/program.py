@@ -18,34 +18,37 @@ from tkinter import *
 # Audio start
 A_start = 0
 # Audio end
-A_end = 5
+A_end = 6
 
 author = 'Piotr Niedziolka'
 
 # ----- DECLARING FUNCTIONS ----- #
 
-# Using for clearing screen
-def clear():
-    _ = system('clear')
+class AudioProcessing:
+    # Using for clearing screen
+    def clear():
+        _ = system('clear')
 
-# Introduction, basic informations
-def introduction():
-    print(f' Autor: ' + author) 
+    # Introduction, basic informations
+    def introduction():
+        print(f' Autor: ' + author) 
 
-# Loading audio to program
-def processing(name):
-    print(' >>>> Loading <<<< ')
+    # Loading audio to program
+    def processing(name):
+        print(' > Przetwarzanie . . . \nAby wykonac nastepna akcje prosze zamknac okno Matplotlib ')
 
-    audio =  T_DSP.read_wave(name)
-    audio.plot()
 
-    T_PLOT.config(xlim=[A_start, A_end], xlabel="time(s)", legend=False)
-    T_PLOT.show()
+        T_PLOT.preplot(rows=2, cols=1)
+        T_PLOT.config(xlim=[A_start, A_end], xlabel="time(s)", legend=False)
+        audio =  T_DSP.read_wave(name)
+        audio.plot()
 
-    audio_spectrum=audio.make_spectrum()
-    audio_spectrum.plot()
-    T_PLOT.config(xlim=[0, 1000])
-    T_PLOT.show()
+        T_PLOT.subplot(2)
+        T_PLOT.config(xlim=[0, 1000])
+        audio_spectrum=audio.make_spectrum()
+        audio_spectrum.plot()
+        
+        T_PLOT.show()
 
 # Function, basic information to analysis
 # def example(): 
@@ -61,14 +64,14 @@ def processing(name):
 
 # ----- MAIN FUNCTION ----- #
 if __name__ == '__main__':
-    clear()
+    AudioProcessing.clear()
     name = ""
-    introduction()
+    AudioProcessing.introduction()
 
     # MAIN LOOP with program
     while True:
 
-        choose = input("Co chciałbyś zrobić?\n 1) Wczytanie pliku\n 2) Analiza pliku\n 3) Wyjscie\n Twój wybór: ")
+        choose = input("\nCo chciałbyś zrobić?\n 1) Wczytanie pliku\n 2) Analiza pliku\n 3) Wyjscie\n Twój wybór: ")
         
         # Choosing audio to analysis
         if choose=='1':
@@ -95,7 +98,7 @@ if __name__ == '__main__':
         # Analysis audio
         elif choose=='2':
             if name != "":
-                processing(name)
+                AudioProcessing.processing(name)
             else:
                 print("Nie wczytano pliku\n")
 
