@@ -1,8 +1,9 @@
+# ----- INFORMATION ABOUT AUTHOR ----- #
 # Imie / Name: Piotr Niedziolka
 # Nr indeksu / Index number: 249023
 # Praca inzynierska / Engineering Thesis
 
-# Libraries:
+# ----- LIBRARIES ----- #
 import threading
 import time
 
@@ -12,20 +13,24 @@ import thinkdsp as T_DSP
 import thinkplot as T_PLOT
 from tkinter import *
 
-#window = Tk()
+# ----- PARAMETERS ----- #
+
 # Audio start
 A_start = 0
 # Audio end
 A_end = 5
 
-author = 'Piotr'
+author = 'Piotr Niedziolka'
 
+# ----- DECLARING FUNCTIONS ----- #
+
+# Using for clearing screen
 def clear():
     _ = system('clear')
 
 # Introduction, basic informations
 def introduction():
-    print(f'> Hi, ' + author) 
+    print(f' Autor: ' + author) 
 
 # Loading audio to program
 def processing(name):
@@ -52,8 +57,9 @@ def processing(name):
 #    T_PLOT.config(xlabel="-", legend=False)
 #    T_PLOT.show()
 
+#window = Tk()
 
-# Main function
+# ----- MAIN FUNCTION ----- #
 if __name__ == '__main__':
     clear()
     name = ""
@@ -98,15 +104,14 @@ if __name__ == '__main__':
             exit(0)
 
         else:
-            print()
+            print()    
 
-        
+    #window.title("Program do analizy")
+    #window.geometry("1000x800+50+50")
+    #window.resizable(False, False)
+    #window.mainloop()
+    #x.join()
 
-        #window.title("Program do analizy")
-        #window.geometry("1000x800+50+50")
-        #window.resizable(False, False)
-        #window.mainloop()
-        #x.join()
-        #   example()
+    # example()
 
     
