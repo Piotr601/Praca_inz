@@ -7,6 +7,8 @@
 import threading
 import time
 
+from matplotlib import pyplot as plt
+from array import *
 from os import system, name
 
 import thinkdsp as T_DSP
@@ -38,28 +40,71 @@ class AudioProcessing:
         print(' > Przetwarzanie . . . \nAby wykonac nastepna akcje prosze zamknac okno Matplotlib ')
 
         # Printing wave
-        T_PLOT.preplot(rows=3, cols=2)
-        T_PLOT.config(xlim=[A_start, A_end], xlabel="time(s)", ylabel="Amplitude", legend=False)
+        T_PLOT.preplot(rows=4, cols=2)
+        T_PLOT.config(xlim=[A_start, A_end], xlabel="Time [s]", ylabel="Amplitude", legend=False)
         audio =  T_DSP.read_wave(name)
         audio.scale(10)
-        audio.plot()
+        audio.plot(color='blue')
 
         T_PLOT.subplot(2)
-        T_PLOT.config(xlim=[A_start, A_end], xlabel="time(s)", ylabel="Amplitude", legend=False)
+        T_PLOT.config(xlim=[A_start, A_end], xlabel="Time [s]", ylabel="Amplitude", legend=False)
         audio2 =  T_DSP.read_wave("corr.wav")
         audio2.scale(10)
-        audio2.plot()
+        audio2.plot(color='red')
 
-        # Counting 
-        suma = 0
 
+        ### Counting 
+        
+        ## Drawing first chart
+
+        suma, aud_sum, i, k = 0, 0, 0, 0
+        taba = []
+        tabb = []
+
+        T_PLOT.subplot(7)
         for x in audio.ys:
             suma += abs(x)
+            aud_sum += abs(x)
+            
+            if(k % 500 == 0):
+                aud_apr = aud_sum/500
+                if(aud_apr):
+                    taba.append(aud_apr)
+                    tabb.append(i)
+                    
+                i += 1
+                aud_sum = 0
 
-        aprox = suma / audio.ys.size
+            k += 1
+        T_PLOT.Plot(tabb, taba, color='black') 
 
-        print(aprox)
-        print(audio.ys.size)
+        aprox = suma / audio.ys.size 
+
+        print("\nAprox: " + str(aprox))
+        print(" Size: " + str(audio.ys.size)) 
+        
+        ## Drawing second chart
+
+        suma, aud_sum, i, k = 0, 0, 0, 0
+        taba = []
+        tabb = []
+
+        T_PLOT.subplot(8)
+        for x in audio2.ys:
+            suma += abs(x)
+            aud_sum += abs(x)
+            
+            if(k % 500 == 0):
+                aud_apr = aud_sum/500
+                if(aud_apr):
+                    taba.append(aud_apr)
+                    tabb.append(i)
+                    
+                i += 1
+                aud_sum = 0
+
+            k += 1
+        T_PLOT.Plot(tabb, taba, color='black')  
 
         ### Results:
         # Lateas	
@@ -79,14 +124,23 @@ class AudioProcessing:
         T_PLOT.subplot(3)
         T_PLOT.config(xlim=[0, 1000], ylabel="Amplitude", xlabel="Frequency [Hz]")
         audio_spectrum=audio.make_spectrum()
+        audio_spectrum.plot(color='blue')
+
+        T_PLOT.subplot(5)
+        T_PLOT.config(xlim=[0, 1000], ylabel="Amplitude", xlabel="Frequency [Hz]")
         audio_spectrum.low_pass(cutoff=73, factor=0.01)
-        audio_spectrum.plot()
+        audio_spectrum.plot(color='blue')
         
         T_PLOT.subplot(4)
         T_PLOT.config(xlim=[0, 1000], ylabel="Amplitude", xlabel="Frequency [Hz]")
         audio2_spectrum=audio2.make_spectrum()
-        audio2_spectrum.plot()
-        
+        audio2_spectrum.plot(color='red')
+
+        T_PLOT.subplot(6)
+        T_PLOT.config(xlim=[0, 1000], ylabel="Amplitude", xlabel="Frequency [Hz]") #ylim=[0,60000]
+        audio2_spectrum.low_pass(cutoff=73, factor=0.01)
+        audio2_spectrum.plot(color='red')
+
         T_PLOT.show()
 
 # Function, basic information to analysis
