@@ -37,16 +37,55 @@ class AudioProcessing:
     def processing(name):
         print(' > Przetwarzanie . . . \nAby wykonac nastepna akcje prosze zamknac okno Matplotlib ')
 
-
-        T_PLOT.preplot(rows=2, cols=1)
-        T_PLOT.config(xlim=[A_start, A_end], xlabel="time(s)", legend=False)
+        # Printing wave
+        T_PLOT.preplot(rows=3, cols=2)
+        T_PLOT.config(xlim=[A_start, A_end], xlabel="time(s)", ylabel="Amplitude", legend=False)
         audio =  T_DSP.read_wave(name)
+        audio.scale(10)
         audio.plot()
 
         T_PLOT.subplot(2)
-        T_PLOT.config(xlim=[0, 1000])
+        T_PLOT.config(xlim=[A_start, A_end], xlabel="time(s)", ylabel="Amplitude", legend=False)
+        audio2 =  T_DSP.read_wave("corr.wav")
+        audio2.scale(10)
+        audio2.plot()
+
+        # Counting 
+        suma = 0
+
+        for x in audio.ys:
+            suma += abs(x)
+
+        aprox = suma / audio.ys.size
+
+        print(aprox)
+        print(audio.ys.size)
+
+        ### Results:
+        # Lateas	
+        # 0.9551936720431643
+        # 423936
+        #
+        # Mr 
+        # 1.276661303947049
+        # 425088
+        #
+        # Corr
+        # 0.336043370802107
+        # 425088
+        ###
+
+        # Printing spectrums
+        T_PLOT.subplot(3)
+        T_PLOT.config(xlim=[0, 1000], ylabel="Amplitude", xlabel="Frequency [Hz]")
         audio_spectrum=audio.make_spectrum()
+        audio_spectrum.low_pass(cutoff=73, factor=0.01)
         audio_spectrum.plot()
+        
+        T_PLOT.subplot(4)
+        T_PLOT.config(xlim=[0, 1000], ylabel="Amplitude", xlabel="Frequency [Hz]")
+        audio2_spectrum=audio2.make_spectrum()
+        audio2_spectrum.plot()
         
         T_PLOT.show()
 
