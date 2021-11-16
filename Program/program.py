@@ -68,20 +68,24 @@ class AudioProcessing:
             
             if(k % 500 == 0):
                 aud_apr = aud_sum/500
-                if(aud_apr):
-                    taba.append(aud_apr)
-                    tabb.append(i)
+                
+                taba.append(aud_apr)
+                tabb.append(i)
                     
                 i += 1
                 aud_sum = 0
 
             k += 1
+        aprox = suma / audio.ys.size 
+            
         T_PLOT.Plot(tabb, taba, color='black') 
 
-        aprox = suma / audio.ys.size 
-
         print("\nAprox: " + str(aprox))
-        print(" Size: " + str(audio.ys.size)) 
+        print(" Size: " + str(audio.ys.size))
+
+        # Drawing aprox line
+        for y in tabb:
+            T_PLOT.Plot(y, aprox, color='green', marker='_') 
         
         ## Drawing second chart
 
@@ -96,15 +100,20 @@ class AudioProcessing:
             
             if(k % 500 == 0):
                 aud_apr = aud_sum/500
-                if(aud_apr):
-                    taba.append(aud_apr)
-                    tabb.append(i)
+
+                taba.append(aud_apr)
+                tabb.append(i)
                     
                 i += 1
                 aud_sum = 0
 
             k += 1
+        aprox = suma / audio2.ys.size 
         T_PLOT.Plot(tabb, taba, color='black')  
+
+        # Drawing a aprox line
+        for y in tabb:
+            T_PLOT.Plot(y, aprox, color='green', marker='_') 
 
         ### Results:
         # Lateas	
@@ -142,16 +151,6 @@ class AudioProcessing:
         audio2_spectrum.plot(color='red')
 
         T_PLOT.show()
-
-# Function, basic information to analysis
-# def example(): 
-#    sinus_signal = T_DSP.SinSignal(freq=1)
-#    
-#    wave = sinus_signal.make_wave(duration=1, framerate=11025)
-#    wave.plot()
-#
-#    T_PLOT.config(xlabel="-", legend=False)
-#    T_PLOT.show()
 
 #window = Tk()
 
@@ -207,7 +206,3 @@ if __name__ == '__main__':
     #window.resizable(False, False)
     #window.mainloop()
     #x.join()
-
-    # example()
-
-    
