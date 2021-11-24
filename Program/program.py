@@ -1,9 +1,17 @@
-# ----- INFORMATION ABOUT AUTHOR ----- #
-# Imie / Name: Piotr Niedziolka
-# Nr indeksu / Index number: 249023
-# Praca inzynierska / Engineering Thesis
+# -------------------------------------- #
+# -------- INFORMACJE O AUTORZE -------- #
+# ----- (INFORMATION ABOUT AUTHOR) ----- #
+# -------------------------------------- #
+#     Imie / Name: Piotr Niedziolka      #
+#   Nr indeksu / Index number: 249023    #
+# Praca inzynierska / Engineering Thesis #
+# -------------------------------------- #
 
-# ----- LIBRARIES ----- #
+# -------------------------------------- #
+# ------------- BIBLIOTEKI ------------- #
+# ------------ (LIBRARIES) ------------- #
+# -------------------------------------- #
+
 import threading
 import time
 
@@ -15,28 +23,35 @@ import thinkdsp as T_DSP
 import thinkplot as T_PLOT
 from tkinter import *
 
-# ----- PARAMETERS ----- #
+# -------------------------------------- #
+# -------------- PARAMETRY ------------- #
+# ------------ (PARAMETERS) ------------ #
+# -------------------------------------- #
 
-# Audio start
+# Start audio na pierwszym wykresie 
 A_start = 0
-# Audio end
+# Koniec audio na pierwszym wykresie
 A_end = 6
 
 author = 'Piotr Niedziolka'
 
-# ----- DECLARING FUNCTIONS ----- #
+# -------------------------------------- #
+# -------------- FUNKCJE --------------- #
+# ------- (DECLARING FUNCTIONS) -------- #
+# -------------------------------------- #
 
 class AudioProcessing:
-    # Using for clearing screen
+    # Funkcja uzywana w celu czyszczenia ekranu
     def clear():
         _ = system('clear')
 
-    # Introduction, basic informations
+    # Wstep, podstawowe informacje
     def introduction():
         print(f' Autor: ' + author) 
 
-    # Loading audio to program
+    # Analizowanie audio
     def processing(name):
+        AudioProcessing.clear()
         print(' > Przetwarzanie . . . \nAby wykonac nastepna akcje prosze zamknac okno Matplotlib ')
 
         # Printing wave
@@ -54,12 +69,14 @@ class AudioProcessing:
 
 
         ### Counting 
-        
-        ## Drawing first chart
+        ## Drawing first black chart
 
+        przec, x_pop, przec_sum, przec_kontr = 0, 0, 0, 0
         suma, aud_sum, i, k = 0, 0, 0, 0
         taba = []
         tabb = []
+
+        # SUBPLOT 7
 
         T_PLOT.subplot(7)
         for x in audio.ys:
@@ -82,17 +99,47 @@ class AudioProcessing:
 
         print("\nAprox: " + str(aprox))
         print(" Size: " + str(audio.ys.size))
+        print()
 
-        # Drawing aprox line
+        # Rysowanie sredniej na wykresie - zielony kolor
         for y in tabb:
-            T_PLOT.Plot(y, aprox, color='green', marker='_') 
-        
-        ## Drawing second chart
+            T_PLOT.Plot(y, aprox, color='green', marker='_')
 
+
+        # Przechodzenie przez wszystkie wartosci
+        # Pozniej nastepuje zliczanie punktow ktore przechodza przez srednia - aprox
+        # Zwracana jest ilosc przechodzenia w jednym cyklu
+        # =  4  poprawna wartosc
+        # >= 6  niepoprawne wartosci - wystepuje szum zaklocajacy 
+        for x in taba:
+            if ((x_pop < aprox) and (x > aprox)):
+                przec += 1
+                przec_sum+=1
+            elif((x_pop > aprox) and (x < aprox)):
+                przec += 1
+                przec_sum+=1
+            x_pop = x
+
+            if (przec >= 4 and x <= 0.1*aprox):
+                print(' 01 Przeciecia w jednym uderzeniu: ' + str(przec))
+                przec_kontr += przec 
+
+                if (przec > 4):
+                    print(" > Uwaga tutaj prawdopodobnie wystepuja szumy")
+
+                przec = 0
+                
+        print('Przeciecia 1: ' + str(przec_sum) + '\n  Kontrolnie: ' + str(przec_kontr) + '\n')      
+
+
+        ## Drawing second black chart
+
+        przec, x_pop, przec_sum, przec_kontr = 0, 0, 0, 0
         suma, aud_sum, i, k = 0, 0, 0, 0
         taba = []
         tabb = []
 
+        # SUBPLOT 8
         T_PLOT.subplot(8)
         for x in audio2.ys:
             suma += abs(x)
@@ -115,6 +162,27 @@ class AudioProcessing:
         for y in tabb:
             T_PLOT.Plot(y, aprox, color='green', marker='_') 
 
+        for x in taba:
+            if ((x_pop <= aprox) and (x > aprox)):
+                przec += 1
+                przec_sum +=1
+            elif((x_pop >= aprox) and (x < aprox)):
+                przec += 1
+                przec_sum += 1
+            x_pop = x
+
+            if (przec >= 4 and x <= 0.1*aprox):
+                print(' 02 Przeciecia w jednym uderzeniu: ' + str(przec))
+                przec_kontr += przec 
+
+                if (przec > 4):
+                    print(" > Uwaga tutaj prawdopodobnie wystepuja szumy")
+                
+                przec = 0
+            
+        print('Przeciecia 2: ' + str(przec_sum) + '\n  Kontrolnie: ' + str(przec_kontr) + '\n')    
+
+
         ### Results:
         # Lateas	
         # 0.9551936720431643
@@ -133,6 +201,10 @@ class AudioProcessing:
         T_PLOT.subplot(3)
         T_PLOT.config(xlim=[0, 1000], ylabel="Amplitude", xlabel="Frequency [Hz]")
         audio_spectrum=audio.make_spectrum()
+
+        # Maksymalna wartość Amplitudy w Hz
+        # print(abs(max(audio_spectrum.hs)))
+
         audio_spectrum.plot(color='blue')
 
         T_PLOT.subplot(5)
@@ -154,28 +226,33 @@ class AudioProcessing:
 
 #window = Tk()
 
-# ----- MAIN FUNCTION ----- #
+# -------------------------------------- #
+# ----- FUNKCJA MAIN - GŁÓWNA PĘTLA ---- #
+# ----------- (MAIN FUNCTION) ---------- #
+# -------------------------------------- #
+
 if __name__ == '__main__':
-    AudioProcessing.clear()
+
     name = ""
+    AudioProcessing.clear()
     AudioProcessing.introduction()
 
-    # MAIN LOOP with program
+    # Glowna petla z programem
     while True:
 
         choose = input("\nCo chciałbyś zrobić?\n 1) Wczytanie pliku\n 2) Analiza pliku\n 3) Wyjscie\n Twój wybór: ")
         
-        # Choosing audio to analysis
+        # Wybranie i wczytywanie sciezki audio do analizy
         if choose=='1':
-            # Preventing wrong or no audio to analyse
+            # Zapobieganie wpisaniu zlej nazwy oraz braku wybrania audio do analizy
             while True:
                 try:
                     print("\nDostepne pliki:")
-                    # Printing all audios in folder
+                    # Wyswietlenie wszystkich dostepnych audio w programie
                     _ = system('ls -m *.wav')
                     name = input("Podaj nazwę pliku: ")
                     
-                    # Preventing eneter a name with format
+                    # Zapobieganie wpisaniu nazwy audio bez formatu
                     for x in name:
                         if name.endswith('.wav'):
                             name = name
@@ -187,14 +264,14 @@ if __name__ == '__main__':
                 except OSError:
                     print("Cannot read file |", name ,"| try again")
                 
-        # Analysis audio
+        # Uruchomienie funkcji z analiza audio
         elif choose=='2':
             if name != "":
                 AudioProcessing.processing(name)
             else:
                 print("Nie wczytano pliku\n")
 
-        # Exit
+        # Wyjscie z programu
         elif choose=='3':
             exit(0)
 
@@ -206,3 +283,8 @@ if __name__ == '__main__':
     #window.resizable(False, False)
     #window.mainloop()
     #x.join()
+
+# -------------------------------------- #
+# --------------- KONIEC --------------- #
+# --------------- (END) ---------------- #
+# -------------------------------------- #
