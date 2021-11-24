@@ -54,13 +54,17 @@ class AudioProcessing:
         AudioProcessing.clear()
         print(' > Przetwarzanie . . . \nAby wykonac nastepna akcje prosze zamknac okno Matplotlib ')
 
-        # Printing wave
+        # Zadeklarowanie wielkosci okna do wyswietlania
         T_PLOT.preplot(rows=4, cols=2)
+        
+        # Wyswietlanie wczytanych plikow
+        # 01 Wykres
         T_PLOT.config(xlim=[A_start, A_end], xlabel="Time [s]", ylabel="Amplitude", legend=False)
         audio =  T_DSP.read_wave(name)
         audio.scale(10)
         audio.plot(color='blue')
 
+        # 02 Wykres
         T_PLOT.subplot(2)
         T_PLOT.config(xlim=[A_start, A_end], xlabel="Time [s]", ylabel="Amplitude", legend=False)
         audio2 =  T_DSP.read_wave("corr.wav")
@@ -68,16 +72,18 @@ class AudioProcessing:
         audio2.plot(color='red')
 
 
-        ### Counting 
-        ## Drawing first black chart
-
+        ### Rysowanie czarnych wykresow do analizy
+        ## Pierwszy czarny wykres
+        # Pomocnicze zmienne do analizy
         przec, x_pop, przec_sum, przec_kontr = 0, 0, 0, 0
         suma, aud_sum, i, k = 0, 0, 0, 0
         taba = []
         tabb = []
 
-        # SUBPLOT 7
-
+        # 07 Wykres
+        # Polega na wyliczeniu sredniej z wartosci bezwzglednej,
+        # a nastepnie co 500 probek brana jest srednia, dzieki
+        # ktorej pozniej calosc jest nanoszona na wykres.
         T_PLOT.subplot(7)
         for x in audio.ys:
             suma += abs(x)
@@ -93,13 +99,14 @@ class AudioProcessing:
                 aud_sum = 0
 
             k += 1
+        # Srednia sygnalu
         aprox = suma / audio.ys.size 
-            
+        # Rysowanie sygnalu
         T_PLOT.Plot(tabb, taba, color='black') 
 
+        # Wypisanie sredniej i wielkosci audio (ilosc probek - calosc)
         print("\nAprox: " + str(aprox))
-        print(" Size: " + str(audio.ys.size))
-        print()
+        print(" Size: " + str(audio.ys.size) + '\n')
 
         # Rysowanie sredniej na wykresie - zielony kolor
         for y in tabb:
@@ -110,36 +117,45 @@ class AudioProcessing:
         # Pozniej nastepuje zliczanie punktow ktore przechodza przez srednia - aprox
         # Zwracana jest ilosc przechodzenia w jednym cyklu
         # =  4  poprawna wartosc
-        # >= 6  niepoprawne wartosci - wystepuje szum zaklocajacy 
+        # >= 6  niepoprawne wartosci - wystepuje szum zaklocajacy
         for x in taba:
+            # Gdy wykres przecina sie rosnac
             if ((x_pop < aprox) and (x > aprox)):
                 przec += 1
                 przec_sum+=1
+            # Gdy wykres przecina sie malejac
             elif((x_pop > aprox) and (x < aprox)):
                 przec += 1
                 przec_sum+=1
             x_pop = x
 
+            # Gdy spelnione sa dwa warunki, to jest ilosc przeciec jest wieksza, badz
+            # rowna niz 4 i jest mniejsza od parametru (aby oddzielic kolejne cykle)
             if (przec >= 4 and x <= 0.1*aprox):
                 print(' 01 Przeciecia w jednym uderzeniu: ' + str(przec))
+                # Zmienna pomocnicza - kontrolna
                 przec_kontr += przec 
 
+                # Gdy wystepuje wiecej niz 4 przeciecia (inaczej niz norma)
                 if (przec > 4):
                     print(" > Uwaga tutaj prawdopodobnie wystepuja szumy")
 
                 przec = 0
-                
+
+        # Wypisywanie ilosc przeciec i liczby kontrolnej
+        # Gdy obydwie liczby sie zgadzaja, program zlicza wszystkie uderzenia
+        # i dziala prawidlowo        
         print('Przeciecia 1: ' + str(przec_sum) + '\n  Kontrolnie: ' + str(przec_kontr) + '\n')      
 
-
-        ## Drawing second black chart
-
+        ## Drugi czarny wykres
+        # Pomocnicze zmienne do analizy
+        # Wyzerowanie wartosci
         przec, x_pop, przec_sum, przec_kontr = 0, 0, 0, 0
         suma, aud_sum, i, k = 0, 0, 0, 0
         taba = []
         tabb = []
 
-        # SUBPLOT 8
+        # 08 Wykres
         T_PLOT.subplot(8)
         for x in audio2.ys:
             suma += abs(x)
@@ -158,10 +174,11 @@ class AudioProcessing:
         aprox = suma / audio2.ys.size 
         T_PLOT.Plot(tabb, taba, color='black')  
 
-        # Drawing a aprox line
+        # Rysowanie sredniej na wykresie - zielony kolor
         for y in tabb:
             T_PLOT.Plot(y, aprox, color='green', marker='_') 
 
+        # Przechodzenie przez wszystkie wartosci
         for x in taba:
             if ((x_pop <= aprox) and (x > aprox)):
                 przec += 1
@@ -182,22 +199,8 @@ class AudioProcessing:
             
         print('Przeciecia 2: ' + str(przec_sum) + '\n  Kontrolnie: ' + str(przec_kontr) + '\n')    
 
-
-        ### Results:
-        # Lateas	
-        # 0.9551936720431643
-        # 423936
-        #
-        # Mr 
-        # 1.276661303947049
-        # 425088
-        #
-        # Corr
-        # 0.336043370802107
-        # 425088
-        ###
-
-        # Printing spectrums
+        # 03 Wykres
+        # Rysowanie spektrum wczytanego audio
         T_PLOT.subplot(3)
         T_PLOT.config(xlim=[0, 1000], ylabel="Amplitude", xlabel="Frequency [Hz]")
         audio_spectrum=audio.make_spectrum()
@@ -207,25 +210,32 @@ class AudioProcessing:
 
         audio_spectrum.plot(color='blue')
 
+        # 05 Wykres
+        # Rysowanie spektrum z filtrem dolnoprzepustowym
         T_PLOT.subplot(5)
         T_PLOT.config(xlim=[0, 1000], ylabel="Amplitude", xlabel="Frequency [Hz]")
         audio_spectrum.low_pass(cutoff=73, factor=0.01)
         audio_spectrum.plot(color='blue')
         
+        # 04 Wykres
+        # Rysowanie spektrum poprawnego bicia serca
         T_PLOT.subplot(4)
         T_PLOT.config(xlim=[0, 1000], ylabel="Amplitude", xlabel="Frequency [Hz]")
         audio2_spectrum=audio2.make_spectrum()
         audio2_spectrum.plot(color='red')
 
+        # 06 Wykres
+        # Rysowanie spektrum z filtrem dolnoprzepustowym
         T_PLOT.subplot(6)
         T_PLOT.config(xlim=[0, 1000], ylabel="Amplitude", xlabel="Frequency [Hz]") #ylim=[0,60000]
         audio2_spectrum.low_pass(cutoff=73, factor=0.01)
         audio2_spectrum.plot(color='red')
 
+        # Wysietla wszystkie wykresy
         T_PLOT.show()
 
-#window = Tk()
 
+# window = Tk()
 # -------------------------------------- #
 # ----- FUNKCJA MAIN - GŁÓWNA PĘTLA ---- #
 # ----------- (MAIN FUNCTION) ---------- #
@@ -276,7 +286,8 @@ if __name__ == '__main__':
             exit(0)
 
         else:
-            print()    
+            AudioProcessing.clear()
+            print(" Bledny wybor, wybierz ponownie! ")    
 
     #window.title("Program do analizy")
     #window.geometry("1000x800+50+50")
