@@ -74,6 +74,7 @@ class AudioProcessing:
     def clear():
         _ = system('clear')
 
+    # TODO wiecej informacji o autorze, o stworzeniu programu itp...
     #* Wstep, podstawowe informacje
     def introduction():
         print('Autor: ' + author) 
@@ -97,8 +98,11 @@ class AudioProcessing:
 
         T_PLOT.show()
 
-    #* Usuwanie szumów (wstępna filtracja sygnału)   
+    #* Usuwanie szumow (wstepna filtracja sygnalu)
+    #! Nalezy filtrowac tylko i wylacznie gdy wystepuja znaczne szumy 
+    #! Blad przy wczytywaniu za duzych plikow  
     def filtration(name):
+        # Zdefiniowanie okna do wyswietlania
         T_PLOT.preplot(rows=2, cols=2)
 
         # Wykres ścieżki audio
@@ -108,31 +112,42 @@ class AudioProcessing:
         audio.scale(10)
         audio.plot(color='darkblue')
 
-        # Częstotliwość audio
+        # CWykres częstotliwościowy audio
         T_PLOT.subplot(3)
         T_PLOT.config(xlim=[0, 1000], ylabel="Amplitude", xlabel="Frequency [Hz]")
         audio_spectrum=audio.make_spectrum()
         audio_spectrum.plot(color='darkblue')
 
-        # Biblioteka służąca do uszuwania szumów z audio
+        # Odszumianie niechcianych szumów
+        # ! Uwaga, przy braku szumów nie należy !
+        # ! korzystać z opcji filtrowania       !
         reduced_noises = nr.reduce_noise(y = data, sr = rate)
         
+        # Tworzenie nowej nazwy i zapis do innego pliku
+        # przefiltrowanego sygnalu
         new_name = 'rn' + name
         wavfile.write(new_name, rate, reduced_noises)
         
+        # Wyswietlenie nowego przefiltrowanego audio
+        # Wykres amplitudowy
         T_PLOT.subplot(2)
         audio_rn = T_DSP.read_wave(new_name)
         audio_rn.scale(10)
         audio_rn.plot(color='blue')
 
+        # Wykres czestotliwosciowy
         T_PLOT.subplot(4)
         T_PLOT.config(xlim=[0, 1000], ylabel="Amplitude", xlabel="Frequency [Hz]")
         audio_rn_spectrum=audio_rn.make_spectrum()
         audio_rn_spectrum.plot(color='blue')
 
-        file = open(new_name, 'rb')
         T_PLOT.show()
    
+    # TODO Wykonac analizowanie w zaleznosci od czestotliwosci
+    # TODO Srednia z przedzialu 0 - 200 Hz, rysowanie i znalezienie
+    # TODO pewnej zaleznosci, by to wykorzystac pozniej
+    # TODO Wiecej w pliku .txt
+    # TODO Sprawdzenie czy maksymalna wartosc przypada na mniej wiecej 100Hz
     #* Analizowanie audio
     def processing(name):
         AudioProcessing.clear()
@@ -156,7 +171,7 @@ class AudioProcessing:
         audio2.plot(color='red')
 
 
-        ### *Rysowanie czarnych wykresow do analizy
+        ###* Rysowanie czarnych wykresow do analizy
         ## Pierwszy czarny wykres
         # Pomocnicze zmienne do analizy
         przec, x_pop, przec_sum, przec_kontr = 0, 0, 0, 0
