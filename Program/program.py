@@ -2,8 +2,8 @@
 # -------- INFORMACJE O AUTORZE -------- #
 # ----- (INFORMATION ABOUT AUTHOR) ----- #
 # -------------------------------------- #
-#     Imie / Name: Piotr Niedziolka      #
-#   Nr indeksu / Index number: 249023    #
+# *    Imie / Name: Piotr Niedziolka   * #
+# *  Nr indeksu / Index number: 249023 * #
 # Praca inzynierska / Engineering Thesis #
 # -------------------------------------- #
 
@@ -11,6 +11,15 @@
 # ------------- BIBLIOTEKI ------------- #
 # ------------ (LIBRARIES) ------------- #
 # -------------------------------------- #
+
+# -------------------------------------- #
+#            BETTER COMMENTS             #
+# * HIGHLIGHTED
+# ! Alert ...
+# ? Should ....
+# TODO sth
+# // that
+# -------------------------------------- # 
 
 import threading
 import time
@@ -46,24 +55,41 @@ author = 'Piotr Niedziolka'
 # ------- (DECLARING FUNCTIONS) -------- #
 # -------------------------------------- #
 
+#
+# Klasa AudioProcessing sluzaca do obslugi przetwarzania audio
+#
+# Metody:
+#  - clear
+#  - introduction
+#  - preview
+#  - filtration 
+#  - processing
+#
+# W argumentach kilku funkcji przekazywana jest nazwa pliku
+# audio wczytana w menu wyboru
+#
+
 class AudioProcessing:
-    # Funkcja uzywana w celu czyszczenia ekranu
+    #* Funkcja uzywana w celu czyszczenia ekranu
     def clear():
         _ = system('clear')
 
-    # Wstep, podstawowe informacje
+    #* Wstep, podstawowe informacje
     def introduction():
-        print(f' Autor: ' + author) 
+        print('Autor: ' + author) 
 
-    # Szybki podglad pliku
+    #* Szybki podglad pliku
     def preview(name):
+        # Zdefiniowanie okna do wyswietlania
         T_PLOT.preplot(rows=2, cols=1)
         
+        # Podglad sciezki audio, wykres amplitudowy
         T_PLOT.config(xlim=[A_start, A_end], xlabel="Time [s]", ylabel="Amplitude", legend=False)
         audio =  T_DSP.read_wave(name)
         audio.scale(10)
         audio.plot(color='blue')
 
+        # Podglad sciezki audio, wykres czestotliwosciowy
         T_PLOT.subplot(2)
         T_PLOT.config(xlim=[0, 1000], ylabel="Amplitude", xlabel="Frequency [Hz]")
         audio_spectrum=audio.make_spectrum()
@@ -71,7 +97,7 @@ class AudioProcessing:
 
         T_PLOT.show()
 
-    # Usuwanie szumów (wstępna filtracja sygnału)   
+    #* Usuwanie szumów (wstępna filtracja sygnału)   
     def filtration(name):
         T_PLOT.preplot(rows=2, cols=2)
 
@@ -107,7 +133,7 @@ class AudioProcessing:
         file = open(new_name, 'rb')
         T_PLOT.show()
    
-    # Analizowanie audio
+    #* Analizowanie audio
     def processing(name):
         AudioProcessing.clear()
         print(' > Przetwarzanie . . . \nAby wykonac nastepna akcje prosze zamknac okno Matplotlib ')
@@ -130,7 +156,7 @@ class AudioProcessing:
         audio2.plot(color='red')
 
 
-        ### Rysowanie czarnych wykresow do analizy
+        ### *Rysowanie czarnych wykresow do analizy
         ## Pierwszy czarny wykres
         # Pomocnicze zmienne do analizy
         przec, x_pop, przec_sum, przec_kontr = 0, 0, 0, 0
@@ -138,7 +164,7 @@ class AudioProcessing:
         taba = []
         tabb = []
 
-        # 07 Wykres
+        # *07 Wykres
         # Polega na wyliczeniu sredniej z wartosci bezwzglednej,
         # a nastepnie co 500 probek brana jest srednia, dzieki
         # ktorej pozniej calosc jest nanoszona na wykres.
@@ -213,7 +239,7 @@ class AudioProcessing:
         taba = []
         tabb = []
 
-        # 08 Wykres
+        # *08 Wykres
         T_PLOT.subplot(8)
         for x in audio2.ys:
             suma += abs(x)
@@ -257,7 +283,7 @@ class AudioProcessing:
             
         print('Przeciecia 2: ' + str(przec_sum) + '\n  Kontrolnie: ' + str(przec_kontr) + '\n')    
 
-        # 03 Wykres
+        # *03 Wykres
         # Rysowanie spektrum wczytanego audio
         T_PLOT.subplot(3)
         T_PLOT.config(xlim=[0, 1000], ylabel="Amplitude", xlabel="Frequency [Hz]")
@@ -268,14 +294,14 @@ class AudioProcessing:
         print(abs(average(audio_spectrum.hs)))
         print(abs(max(audio_spectrum.hs)))
 
-        # 05 Wykres
+        # *05 Wykres
         # Rysowanie spektrum z filtrem dolnoprzepustowym
         T_PLOT.subplot(5)
         T_PLOT.config(xlim=[0, 1000], ylabel="Amplitude", xlabel="Frequency [Hz]")
         audio_spectrum.low_pass(cutoff=200, factor=0.01)
         audio_spectrum.plot(color='darkblue')
 
-        # 04 Wykres
+        # *04 Wykres
         # Rysowanie spektrum poprawnego bicia serca
         T_PLOT.subplot(4)
         T_PLOT.config(xlim=[0, 1000], ylabel="Amplitude", xlabel="Frequency [Hz]")
@@ -286,7 +312,7 @@ class AudioProcessing:
         print(abs(average(audio2_spectrum.hs)))
         print(abs(max(audio2_spectrum.hs)))
 
-        # 06 Wykres
+        # *06 Wykres
         # Rysowanie spektrum z filtrem dolnoprzepustowym
         T_PLOT.subplot(6)
         T_PLOT.config(xlim=[0, 1000], ylabel="Amplitude", xlabel="Frequency [Hz]") #ylim=[0,60000]
@@ -297,12 +323,13 @@ class AudioProcessing:
         T_PLOT.show()
 
 
-# window = Tk()
+#// window = Tk()
 # -------------------------------------- #
 # ----- FUNKCJA MAIN - GŁÓWNA PĘTLA ---- #
 # ----------- (MAIN FUNCTION) ---------- #
 # -------------------------------------- #
 
+# Glowna funkcja
 def main():
     name = ""
     AudioProcessing.clear()
@@ -321,7 +348,9 @@ def main():
                     print("\nDostepne pliki:")
                     # Wyswietlenie wszystkich dostepnych audio w programie
                     _ = system('ls -m *.wav')
-                    name = input("Podaj nazwę pliku: ")
+                    print("\nDostepne pliki po filtracji:")
+                    _ = system('ls -m rn*.wav')
+                    name = input("\nPodaj nazwę pliku: ")
                     
                     # Zapobieganie wpisaniu nazwy audio bez formatu
                     for x in name:
@@ -366,12 +395,13 @@ def main():
             AudioProcessing.clear()
             print(" Bledny wybor, wybierz ponownie! ")    
 
-    #window.title("Program do analizy")
-    #window.geometry("1000x800+50+50")
-    #window.resizable(False, False)
-    #window.mainloop()
-    #x.join()
+    #//window.title("Program do analizy")
+    #//window.geometry("1000x800+50+50")
+    #//window.resizable(False, False)
+    #//window.mainloop()
+    #//x.join()
 
+# Wywolanie funkcji
 if __name__ == '__main__':
     main()
 
