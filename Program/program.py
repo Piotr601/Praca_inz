@@ -14,13 +14,19 @@
 
 import threading
 import time
+import math
 
+from scipy.io import wavfile
 from matplotlib import pyplot as plt
 from array import *
 from os import system, name
+from numpy.lib.function_base import average
 
+import noisereduce as nr
 import thinkdsp as T_DSP
 import thinkplot as T_PLOT
+
+import scipy.signal as sig
 from tkinter import *
 
 # -------------------------------------- #
@@ -49,6 +55,58 @@ class AudioProcessing:
     def introduction():
         print(f' Autor: ' + author) 
 
+    # Szybki podglad pliku
+    def preview(name):
+        T_PLOT.preplot(rows=2, cols=1)
+        
+        T_PLOT.config(xlim=[A_start, A_end], xlabel="Time [s]", ylabel="Amplitude", legend=False)
+        audio =  T_DSP.read_wave(name)
+        audio.scale(10)
+        audio.plot(color='blue')
+
+        T_PLOT.subplot(2)
+        T_PLOT.config(xlim=[0, 1000], ylabel="Amplitude", xlabel="Frequency [Hz]")
+        audio_spectrum=audio.make_spectrum()
+        audio_spectrum.plot(color='darkblue')
+
+        T_PLOT.show()
+
+    # Usuwanie szumów (wstępna filtracja sygnału)   
+    def filtration(name):
+        T_PLOT.preplot(rows=2, cols=2)
+
+        # Wykres ścieżki audio
+        T_PLOT.config(xlim=[A_start, A_end], xlabel="Time [s]", ylabel="Amplitude", legend=False)
+        audio =  T_DSP.read_wave(name)
+        rate, data = wavfile.read(name)
+        audio.scale(10)
+        audio.plot(color='darkblue')
+
+        # Częstotliwość audio
+        T_PLOT.subplot(3)
+        T_PLOT.config(xlim=[0, 1000], ylabel="Amplitude", xlabel="Frequency [Hz]")
+        audio_spectrum=audio.make_spectrum()
+        audio_spectrum.plot(color='darkblue')
+
+        # Biblioteka służąca do uszuwania szumów z audio
+        reduced_noises = nr.reduce_noise(y = data, sr = rate)
+        
+        new_name = 'rn' + name
+        wavfile.write(new_name, rate, reduced_noises)
+        
+        T_PLOT.subplot(2)
+        audio_rn = T_DSP.read_wave(new_name)
+        audio_rn.scale(10)
+        audio_rn.plot(color='blue')
+
+        T_PLOT.subplot(4)
+        T_PLOT.config(xlim=[0, 1000], ylabel="Amplitude", xlabel="Frequency [Hz]")
+        audio_rn_spectrum=audio_rn.make_spectrum()
+        audio_rn_spectrum.plot(color='blue')
+
+        file = open(new_name, 'rb')
+        T_PLOT.show()
+   
     # Analizowanie audio
     def processing(name):
         AudioProcessing.clear()
@@ -204,32 +262,36 @@ class AudioProcessing:
         T_PLOT.subplot(3)
         T_PLOT.config(xlim=[0, 1000], ylabel="Amplitude", xlabel="Frequency [Hz]")
         audio_spectrum=audio.make_spectrum()
+        audio_spectrum.plot(color='darkblue')
 
         # Maksymalna wartość Amplitudy w Hz
-        # print(abs(max(audio_spectrum.hs)))
-
-        audio_spectrum.plot(color='blue')
+        print(abs(average(audio_spectrum.hs)))
+        print(abs(max(audio_spectrum.hs)))
 
         # 05 Wykres
         # Rysowanie spektrum z filtrem dolnoprzepustowym
         T_PLOT.subplot(5)
         T_PLOT.config(xlim=[0, 1000], ylabel="Amplitude", xlabel="Frequency [Hz]")
-        audio_spectrum.low_pass(cutoff=73, factor=0.01)
-        audio_spectrum.plot(color='blue')
-        
+        audio_spectrum.low_pass(cutoff=200, factor=0.01)
+        audio_spectrum.plot(color='darkblue')
+
         # 04 Wykres
         # Rysowanie spektrum poprawnego bicia serca
         T_PLOT.subplot(4)
         T_PLOT.config(xlim=[0, 1000], ylabel="Amplitude", xlabel="Frequency [Hz]")
         audio2_spectrum=audio2.make_spectrum()
-        audio2_spectrum.plot(color='red')
+        audio2_spectrum.plot(color='darkred')
+
+        # Maksymalna wartość Amplitudy w H
+        print(abs(average(audio2_spectrum.hs)))
+        print(abs(max(audio2_spectrum.hs)))
 
         # 06 Wykres
         # Rysowanie spektrum z filtrem dolnoprzepustowym
         T_PLOT.subplot(6)
         T_PLOT.config(xlim=[0, 1000], ylabel="Amplitude", xlabel="Frequency [Hz]") #ylim=[0,60000]
-        audio2_spectrum.low_pass(cutoff=73, factor=0.01)
-        audio2_spectrum.plot(color='red')
+        audio2_spectrum.low_pass(cutoff=200, factor=0.01)
+        audio2_spectrum.plot(color='darkred')
 
         # Wysietla wszystkie wykresy
         T_PLOT.show()
@@ -241,19 +303,18 @@ class AudioProcessing:
 # ----------- (MAIN FUNCTION) ---------- #
 # -------------------------------------- #
 
-if __name__ == '__main__':
-
+def main():
     name = ""
     AudioProcessing.clear()
     AudioProcessing.introduction()
 
     # Glowna petla z programem
     while True:
-
-        choose = input("\nCo chciałbyś zrobić?\n 1) Wczytanie pliku\n 2) Analiza pliku\n 3) Wyjscie\n Twój wybór: ")
+        print("\n Aktualnie wczytany plik: " + name)
+        choose = input("\nCo chcialbys zrobic?\n 1) Wczytanie pliku\n 2) Szybki podglad\n 3) Analiza pliku\n 4) Filtracja\n 5) Wyjscie\n Twoj wybor: ")
         
         # Wybranie i wczytywanie sciezki audio do analizy
-        if choose=='1':
+        if choose =='1':
             # Zapobieganie wpisaniu zlej nazwy oraz braku wybrania audio do analizy
             while True:
                 try:
@@ -270,21 +331,37 @@ if __name__ == '__main__':
                             name = name + ".wav"
 
                     file = open(name, 'rb')
+                    AudioProcessing.clear()
                     break
                 except OSError:
-                    print("Cannot read file |", name ,"| try again")
-                
-        # Uruchomienie funkcji z analiza audio
-        elif choose=='2':
+                    print("Nie mozna wczytac pliku |", name ,"| sprobuj ponownie")
+
+        # Szybki podglad pliku
+        elif choose =='2':
             if name != "":
+                AudioProcessing.preview(name)
+            else:
+                print("Nie wczytano pliku\n")
+
+        # Uruchomienie funkcji z analiza audio
+        elif choose =='3':
+            if name != "":
+                AudioProcessing.clear()
                 AudioProcessing.processing(name)
             else:
                 print("Nie wczytano pliku\n")
 
+        # Filtracja szumów
+        elif choose =='4':
+            if name != "":
+                AudioProcessing.filtration(name)
+            else:
+                print("Nie wczytano pliku\n")
+            
         # Wyjscie z programu
-        elif choose=='3':
+        elif choose =='5':
             exit(0)
-
+        
         else:
             AudioProcessing.clear()
             print(" Bledny wybor, wybierz ponownie! ")    
@@ -294,6 +371,9 @@ if __name__ == '__main__':
     #window.resizable(False, False)
     #window.mainloop()
     #x.join()
+
+if __name__ == '__main__':
+    main()
 
 # -------------------------------------- #
 # --------------- KONIEC --------------- #
