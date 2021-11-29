@@ -47,8 +47,9 @@ from tkinter import *
 A_start = 0
 # Koniec audio na pierwszym wykresie
 A_end = 6
-
-author = 'Piotr Niedziolka'
+# Liczba probek brana pod uwage w liczeniu
+# srednich wykresow - szare wykresy w analizie
+l_probek = 500
 
 # -------------------------------------- #
 # -------------- FUNKCJE --------------- #
@@ -77,8 +78,16 @@ class AudioProcessing:
     # TODO wiecej informacji o autorze, o stworzeniu programu itp...
     #* Wstep, podstawowe informacje
     def introduction():
-        print('Autor: ' + author) 
-
+        print('#======================================================================#')
+        print('|     Opracowanie i implementacja systemu do analizy szumów serca      |') 
+        print('|  Development and Implementation of a Heart Sound Analysis Framework  |')
+        print('|                                                                      |')
+        print('|                          Automatyka i Robotyka                       |')
+        print('|                         Politechnika Wroclawska                      |')
+        print('|                              Przemysl 4.0                            |')
+        print('|                             Piotr Niedziolka                         |')
+        print('#======================================================================#')        
+    
     #* Szybki podglad pliku
     def preview(name):
         # Zdefiniowanie okna do wyswietlania
@@ -131,6 +140,7 @@ class AudioProcessing:
         # Wyswietlenie nowego przefiltrowanego audio
         # Wykres amplitudowy
         T_PLOT.subplot(2)
+        T_PLOT.config(xlim=[A_start, A_end], xlabel="Time [s]", ylabel="Amplitude", legend=False)
         audio_rn = T_DSP.read_wave(new_name)
         audio_rn.scale(10)
         audio_rn.plot(color='blue')
@@ -181,15 +191,15 @@ class AudioProcessing:
 
         # *07 Wykres
         # Polega na wyliczeniu sredniej z wartosci bezwzglednej,
-        # a nastepnie co 500 probek brana jest srednia, dzieki
+        # a nastepnie co (l_probek) brana jest srednia, dzieki
         # ktorej pozniej calosc jest nanoszona na wykres.
         T_PLOT.subplot(7)
         for x in audio.ys:
             suma += abs(x)
             aud_sum += abs(x)
             
-            if(k % 500 == 0):
-                aud_apr = aud_sum/500
+            if(k % l_probek == 0):
+                aud_apr = aud_sum/l_probek
                 
                 taba.append(aud_apr)
                 tabb.append(i)
@@ -260,8 +270,8 @@ class AudioProcessing:
             suma += abs(x)
             aud_sum += abs(x)
             
-            if(k % 500 == 0):
-                aud_apr = aud_sum/500
+            if(k % l_probek == 0):
+                aud_apr = aud_sum/l_probek
 
                 taba.append(aud_apr)
                 tabb.append(i)
@@ -339,7 +349,7 @@ class AudioProcessing:
 
 
 #// window = Tk()
-# -------------------------------------- #
+# ------------------------------------- #
 # ----- FUNKCJA MAIN - GŁÓWNA PĘTLA ---- #
 # ----------- (MAIN FUNCTION) ---------- #
 # -------------------------------------- #
@@ -352,7 +362,10 @@ def main():
 
     # Glowna petla z programem
     while True:
-        print("\n Aktualnie wczytany plik: " + name)
+        if name:
+            print("\n[@] Aktualnie wczytany plik: " + name)
+        else:
+            print("\n[] Aktualnie wczytany plik: " + name)
         choose = input("\nCo chcialbys zrobic?\n 1) Wczytanie pliku\n 2) Szybki podglad\n 3) Analiza pliku\n 4) Filtracja\n 5) Wyjscie\n Twoj wybor: ")
         
         # Wybranie i wczytywanie sciezki audio do analizy
