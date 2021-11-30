@@ -75,7 +75,7 @@ class AudioProcessing:
     def clear():
         _ = system('clear')
 
-    # TODO wiecej informacji o autorze, o stworzeniu programu itp...
+    #// TODO wiecej informacji o autorze, o stworzeniu programu itp...
     #* Wstep, podstawowe informacje
     def introduction():
         print('#======================================================================#')
@@ -189,6 +189,7 @@ class AudioProcessing:
         taba = []
         tabb = []
 
+        #* =====================================================================================
         # *07 Wykres
         # Polega na wyliczeniu sredniej z wartosci bezwzglednej,
         # a nastepnie co (l_probek) brana jest srednia, dzieki
@@ -264,6 +265,7 @@ class AudioProcessing:
         taba = []
         tabb = []
 
+        #* =====================================================================================
         # *08 Wykres
         T_PLOT.subplot(8)
         for x in audio2.ys:
@@ -308,6 +310,7 @@ class AudioProcessing:
             
         print('Przeciecia 2: ' + str(przec_sum) + '\n  Kontrolnie: ' + str(przec_kontr) + '\n')    
 
+        #* =====================================================================================
         # *03 Wykres
         # Rysowanie spektrum wczytanego audio
         T_PLOT.subplot(3)
@@ -316,16 +319,35 @@ class AudioProcessing:
         audio_spectrum.plot(color='darkblue')
 
         # Maksymalna wartość Amplitudy w Hz
-        print(abs(average(audio_spectrum.hs)))
-        print(abs(max(audio_spectrum.hs)))
+        # print(' Avarage: ' + str(abs(average(audio_spectrum.hs))))
+        # print(' Max: ' + str(abs(max(audio_spectrum.hs))))
 
+        # Policzenie sredniej czestotliwosci
+        k = 0
+        plot_sum = 0
+        tabc = []
+
+        for x in audio_spectrum.fs:
+            if (x<=200):
+                plot_sum = plot_sum + abs(audio_spectrum.hs[k])
+                tabc.append(k)
+                k += 1
+
+        # Wyswietlenie sredniej czestotliwosci
+        freq_avg = plot_sum/k
+        
         # *05 Wykres
         # Rysowanie spektrum z filtrem dolnoprzepustowym
         T_PLOT.subplot(5)
-        T_PLOT.config(xlim=[0, 1000], ylabel="Amplitude", xlabel="Frequency [Hz]")
+        T_PLOT.config(xlim=[0, 200], ylabel="Amplitude", xlabel="Frequency [Hz]")
         audio_spectrum.low_pass(cutoff=200, factor=0.01)
         audio_spectrum.plot(color='darkblue')
+        
+        # Rysowanie sredniej na wykresie - czerwony kolor
+        for y in tabc:
+            T_PLOT.Plot(y, freq_avg, color='red', marker='_')
 
+        #* =====================================================================================
         # *04 Wykres
         # Rysowanie spektrum poprawnego bicia serca
         T_PLOT.subplot(4)
@@ -334,22 +356,45 @@ class AudioProcessing:
         audio2_spectrum.plot(color='darkred')
 
         # Maksymalna wartość Amplitudy w H
-        print(abs(average(audio2_spectrum.hs)))
-        print(abs(max(audio2_spectrum.hs)))
+        # print(' --------------------------')
+        # print(' Avarage: ' + str(abs(average(audio2_spectrum.hs))))
+        # print(' Max: ' + str(abs(max(audio2_spectrum.hs))))
+
+        # Policzenie sredniej czestotliwosci
+        k = 0
+        plot_sum1 = 0
+        tabd = []
+
+        for x in audio2_spectrum.fs:
+            if (x<=200):
+                plot_sum1 = plot_sum1 + abs(audio2_spectrum.hs[k])
+                tabd.append(k)
+                k += 1
+
+        # Wyswietlenie sredniej czestotliwosci
+        freq_avg1 = plot_sum1/k
+
+        #// Jeśli amplituda jest wieksza niz 125% bazowego to mozliwe szumy
+        #//if (abs(max(audio_spectrum.hs)) / abs(max(audio2_spectrum.hs))) > 1.25:
+        #//    print("MOŻLIWE SZUMY!!")
 
         # *06 Wykres
         # Rysowanie spektrum z filtrem dolnoprzepustowym
         T_PLOT.subplot(6)
-        T_PLOT.config(xlim=[0, 1000], ylabel="Amplitude", xlabel="Frequency [Hz]") #ylim=[0,60000]
+        T_PLOT.config(xlim=[0, 200], ylabel="Amplitude", xlabel="Frequency [Hz]") #ylim=[0,60000]
         audio2_spectrum.low_pass(cutoff=200, factor=0.01)
         audio2_spectrum.plot(color='darkred')
+        
+        # Rysowanie sredniej na wykresie - czerwony kolor
+        for y in tabd:
+            T_PLOT.Plot(y, freq_avg1, color='red', marker='_')
 
-        # Wysietla wszystkie wykresy
+        #* Wyswietla wszystkie wykresy
         T_PLOT.show()
 
 
 #// window = Tk()
-# ------------------------------------- #
+# -------------------------------------- #
 # ----- FUNKCJA MAIN - GŁÓWNA PĘTLA ---- #
 # ----------- (MAIN FUNCTION) ---------- #
 # -------------------------------------- #
