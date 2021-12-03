@@ -25,6 +25,11 @@ import threading
 import time
 import math
 
+import pyaudio
+import wave
+
+import numpy as np
+from pydub import AudioSegment
 from scipy.io import wavfile
 from matplotlib import pyplot as plt
 from array import *
@@ -35,6 +40,7 @@ import noisereduce as nr
 import thinkdsp as T_DSP
 import thinkplot as T_PLOT
 
+from scipy.signal import butter, filtfilt, lfilter
 import scipy.signal as sig
 from tkinter import *
 
@@ -75,6 +81,64 @@ class AudioProcessing:
     def clear():
         _ = system('clear')
 
+    #* Funkcja uzywana do nagrywania pliku
+    def record():
+        # Zmienne do nagrywania
+        chunk = 1024                     # ilosc chunkow
+        sample_format = pyaudio.paInt16  # ilosc bitow w probce
+        channels = 2                     # 2 kanal
+        fs = 44100                       # nagrywanie w liczbie probek na sekunde
+        seconds = 7                      # czas nagrywania
+
+        # Nazwa pliku nagrywanego
+        recording = input('\nPodaj nazwe pliku: ') + '.wav'
+
+        # Tworzenie interfejsu PyAudio
+        PyAud = pyaudio.PyAudio()
+
+        # Czyszczenie ekranu
+        AudioProcessing.clear()
+
+        print('Nagrywanie ...')
+
+        # Zdefiniowanie strumienia
+        stream = PyAud.open(format=sample_format,
+                channels=channels,
+                rate=fs,
+                frames_per_buffer=chunk,
+                input=True)
+
+        # Inicjalizacja tabeli do przechowywania ramek
+        frames = []
+
+        # Przechowywanie danych w chunkach
+        for i in range(0, int(fs / chunk * seconds)):
+            data = stream.read(chunk)
+            frames.append(data)
+
+        # Zatrzymanie i zamkniecie strumienia 
+        stream.stop_stream()
+        stream.close()
+        
+        # Zakonczenie interfejsu PyAud
+        PyAud.terminate()
+
+        print(' Pomyslnie zakonczono nagrywanie pliku: ' + recording)
+
+        # Zapis zapisanego pliku do formatu WAV
+        wav_file = wave.open(recording, 'wb')
+        
+        wav_file.setnchannels(channels)
+        wav_file.setsampwidth(PyAud.get_sample_size(sample_format))
+        wav_file.setframerate(fs)
+        wav_file.writeframes(b''.join(frames))
+        wav_file.close()
+
+        song = AudioSegment.from_wav(recording)
+        last_6_sec = song[-6000:]
+        last_6_sec.export(recording, format="wav")
+        
+
     #// TODO wiecej informacji o autorze, o stworzeniu programu itp...
     #* Wstep, podstawowe informacje
     def introduction():
@@ -107,51 +171,128 @@ class AudioProcessing:
 
         T_PLOT.show()
 
-    #* Usuwanie szumow (wstepna filtracja sygnalu)
-    #! Nalezy filtrowac tylko i wylacznie gdy wystepuja znaczne szumy 
-    #! Blad przy wczytywaniu za duzych plikow  
+    #* Usuwanie szumow, wstepna filtracja
+    # Napisano filtracje bazujaca na 3 filtrach
+    # Band -> Lower -> Band
+    # Dzieki temu usuwamy niechciane szumy
     def filtration(name):
         # Zdefiniowanie okna do wyswietlania
         T_PLOT.preplot(rows=2, cols=2)
 
-        # Wykres ścieżki audio
-        T_PLOT.config(xlim=[A_start, A_end], xlabel="Time [s]", ylabel="Amplitude", legend=False)
+        # Podglad sciezki audio
+        T_PLOT.config(xlabel="Time [s]", ylabel="Amplitude", legend=False)
         audio =  T_DSP.read_wave(name)
-        rate, data = wavfile.read(name)
         audio.scale(10)
-        audio.plot(color='darkblue')
+        audio.plot(color='blue')
 
-        # CWykres częstotliwościowy audio
-        T_PLOT.subplot(3)
+        # Wykres czestotliwosci audio
+        T_PLOT.subplot(2)
         T_PLOT.config(xlim=[0, 1000], ylabel="Amplitude", xlabel="Frequency [Hz]")
         audio_spectrum=audio.make_spectrum()
         audio_spectrum.plot(color='darkblue')
 
-        # Odszumianie niechcianych szumów
-        # ! Uwaga, przy braku szumów nie należy !
-        # ! korzystać z opcji filtrowania       !
-        reduced_noises = nr.reduce_noise(y = data, sr = rate)
-        
-        # Tworzenie nowej nazwy i zapis do innego pliku
-        # przefiltrowanego sygnalu
-        new_name = 'rn' + name
-        wavfile.write(new_name, rate, reduced_noises)
-        
-        # Wyswietlenie nowego przefiltrowanego audio
-        # Wykres amplitudowy
-        T_PLOT.subplot(2)
-        T_PLOT.config(xlim=[A_start, A_end], xlabel="Time [s]", ylabel="Amplitude", legend=False)
-        audio_rn = T_DSP.read_wave(new_name)
-        audio_rn.scale(10)
-        audio_rn.plot(color='blue')
+        #====================================#
+        #              FILTR BAND            #
+        #====================================#
 
-        # Wykres czestotliwosciowy
+        # Zmienne stale
+        PLIK_WAVE = name
+        NOWY_PLIK_WAVE = 'f_' + name
+        FRAME_RATE = 44100
+        ORDER = 2
+
+        # Zmienne pomocnicze
+        lowcut = 29.0
+        highcut = 40.0
+        
+        # Zdefiniowanie filtra
+        def butter_bandpass(lowcut, highcut, fs, order=ORDER):
+            nyq = 0.5 * fs
+            low = lowcut / nyq
+            high = highcut / nyq
+            b, a = butter(order, [low, high], btype='band')
+            return b, a
+
+        def butter_bandpass_filter(data, lowcut, highcut, fs, order=ORDER):
+            b, a = butter_bandpass(lowcut, highcut, fs, order=order)
+            y = lfilter(b, a, data)
+            return y
+
+        def bandpass_filter0(buffer):
+            return butter_bandpass_filter(buffer, lowcut, highcut, FRAME_RATE, order=ORDER)
+
+        # Wczytanie pliku
+        samplerate, data = wavfile.read(PLIK_WAVE)
+        samplerate = FRAME_RATE
+
+        # Filtrowanie oraz zapis do pliku
+        filtered = np.apply_along_axis(bandpass_filter0, 0, data).astype('int16')
+        wavfile.write(NOWY_PLIK_WAVE, samplerate, filtered)
+
+        #====================================#
+        #              FILTR LOW             #
+        #====================================#
+
+        # Zmienna pomocnicza
+        cutoff = 10.0
+
+        # Zdefiniowanie filtra 
+        def butter_lowpass(cutoff, fs, order = ORDER):
+            nyqs = 0.5 * fs
+            normal_cutoff = cutoff/nyqs
+            b,a = butter(order, normal_cutoff, btype='low', analog= False)
+            return b,a
+
+        def butter_lowpass_filter(data, cutoff, fs, order=ORDER):
+            b, a = butter_lowpass(cutoff, fs, order=order)
+            y = lfilter(b, a, data)
+            return y
+
+        def lowpass_filter(buffer):
+            return butter_lowpass_filter(buffer, cutoff, FRAME_RATE, order=ORDER)
+            
+        # Wczytanie pliku
+        samplerate, data = wavfile.read(NOWY_PLIK_WAVE)
+        samplerate = FRAME_RATE
+
+        # Filtracja, zapis do pliku
+        filtered = np.apply_along_axis(lowpass_filter, 0, data).astype('int16')
+        wavfile.write(NOWY_PLIK_WAVE, samplerate, filtered)
+
+        #====================================#
+        #              FILTR BAND            #
+        #====================================#
+
+        # Zmienne pomocnicze
+        lowcut = 22.0
+        highcut = 40.0
+
+        # Wczytanie pliku
+        samplerate, data = wavfile.read(NOWY_PLIK_WAVE)
+        samplerate = FRAME_RATE
+
+        # Filtracja, zapis do pliku
+        filtered = np.apply_along_axis(bandpass_filter0, 0, data).astype('int16')
+        wavfile.write(NOWY_PLIK_WAVE, samplerate, filtered)
+
+        # Odczytanie pliku
+        file = open(NOWY_PLIK_WAVE, 'rb')
+                 
+        # Podglad sciezki audio, wykres amplitudowy
+        T_PLOT.subplot(3)
+        T_PLOT.config(xlim=[0, 6], xlabel="Time [s]", ylabel="Amplitude", legend=False)
+        audio =  T_DSP.read_wave(file)
+        audio.scale(10)
+        audio.plot(color='blue')
+
+        # Podglad sciezki audio, wykres czestotliwosciowy
         T_PLOT.subplot(4)
-        T_PLOT.config(xlim=[0, 1000], ylabel="Amplitude", xlabel="Frequency [Hz]")
-        audio_rn_spectrum=audio_rn.make_spectrum()
-        audio_rn_spectrum.plot(color='blue')
+        T_PLOT.config(xlim=[0, 100], ylabel="Amplitude", xlabel="Frequency [Hz]")
+        audio_spectrum=audio.make_spectrum()
+        audio_spectrum.plot(color='darkblue')
 
         T_PLOT.show()
+        
    
     # TODO Wykonac analizowanie w zaleznosci od czestotliwosci
     # TODO Srednia z przedzialu 0 - 200 Hz, rysowanie i znalezienie
@@ -210,12 +351,13 @@ class AudioProcessing:
 
             k += 1
         # Srednia sygnalu
-        aprox = suma / audio.ys.size 
+        aprox = suma / audio.ys.size
+        aprox = 1.55 * aprox
         # Rysowanie sygnalu
         T_PLOT.Plot(tabb, taba, color='black') 
 
         # Wypisanie sredniej i wielkosci audio (ilosc probek - calosc)
-        print("\nAprox: " + str(aprox))
+        print("\nAprox +1: " + str(aprox))
         print(" Size: " + str(audio.ys.size) + '\n')
 
         # Rysowanie sredniej na wykresie - zielony kolor
@@ -282,7 +424,8 @@ class AudioProcessing:
                 aud_sum = 0
 
             k += 1
-        aprox = suma / audio2.ys.size 
+        aprox = suma / audio2.ys.size
+        aprox = 1.55 * aprox
         T_PLOT.Plot(tabb, taba, color='black')  
 
         # Rysowanie sredniej na wykresie - zielony kolor
@@ -320,7 +463,6 @@ class AudioProcessing:
 
         # Maksymalna wartość Amplitudy w Hz
         # print(' Avarage: ' + str(abs(average(audio_spectrum.hs))))
-        # print(' Max: ' + str(abs(max(audio_spectrum.hs))))
 
         # Policzenie sredniej czestotliwosci
         k = 0
@@ -335,6 +477,14 @@ class AudioProcessing:
 
         # Wyswietlenie sredniej czestotliwosci
         freq_avg = plot_sum/k
+        freq_max = abs(max(audio_spectrum.hs))
+        print(' Poniższe wartosci badamy w przedziale 0-200 Hz')
+        print(' 01 Srednia czestotliwosc: ' + str(freq_avg))
+        print(' 01 Maksymalna czestotliwosc: ' + str(freq_max))
+
+        # Przelicznik maksymalna czestosliwosc do sredniej
+        conv_factor = freq_max/freq_avg
+        print(' 01 Przelicznik: ' + str(conv_factor))
         
         # *05 Wykres
         # Rysowanie spektrum z filtrem dolnoprzepustowym
@@ -358,7 +508,6 @@ class AudioProcessing:
         # Maksymalna wartość Amplitudy w H
         # print(' --------------------------')
         # print(' Avarage: ' + str(abs(average(audio2_spectrum.hs))))
-        # print(' Max: ' + str(abs(max(audio2_spectrum.hs))))
 
         # Policzenie sredniej czestotliwosci
         k = 0
@@ -373,6 +522,13 @@ class AudioProcessing:
 
         # Wyswietlenie sredniej czestotliwosci
         freq_avg1 = plot_sum1/k
+        freq_max1 = abs(max(audio2_spectrum.hs))
+        print(' 02 Srednia czestotliwosc: ' + str(freq_avg1))
+        print(' 02 Maksymalna czestotliwosc: ' + str(freq_max1))
+
+        # Przelicznik maksymalna czestosliwosc do sredniej
+        conv_factor1 = freq_max1/freq_avg1
+        print(' 02 Przelicznik: ' + str(conv_factor1))
 
         #// Jeśli amplituda jest wieksza niz 125% bazowego to mozliwe szumy
         #//if (abs(max(audio_spectrum.hs)) / abs(max(audio2_spectrum.hs))) > 1.25:
@@ -411,7 +567,7 @@ def main():
             print("\n[@] Aktualnie wczytany plik: " + name)
         else:
             print("\n[] Aktualnie wczytany plik: " + name)
-        choose = input("\nCo chcialbys zrobic?\n 1) Wczytanie pliku\n 2) Szybki podglad\n 3) Analiza pliku\n 4) Filtracja\n 5) Wyjscie\n Twoj wybor: ")
+        choose = input("\nCo chcialbys zrobic?\n 1) Wczytanie pliku\n 2) Szybki podglad\n 3) Analiza pliku\n 4) Filtracja\n 5) Nagrywanie dzwieku\n 6) Wyjscie\n Twoj wybor: ")
         
         # Wybranie i wczytywanie sciezki audio do analizy
         if choose =='1':
@@ -422,7 +578,7 @@ def main():
                     # Wyswietlenie wszystkich dostepnych audio w programie
                     _ = system('ls -m *.wav')
                     print("\nDostepne pliki po filtracji:")
-                    _ = system('ls -m rn*.wav')
+                    _ = system('ls -m f_*.wav')
                     name = input("\nPodaj nazwę pliku: ")
                     
                     # Zapobieganie wpisaniu nazwy audio bez formatu
@@ -462,8 +618,11 @@ def main():
             
         # Wyjscie z programu
         elif choose =='5':
+            AudioProcessing.record()
+
+        elif choose =='6':
             exit(0)
-        
+
         else:
             AudioProcessing.clear()
             print(" Bledny wybor, wybierz ponownie! ")    
