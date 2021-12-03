@@ -57,6 +57,8 @@ A_end = 6
 # srednich wykresow - szare wykresy w analizie
 l_probek = 500
 
+przelicznik = 0
+
 # -------------------------------------- #
 # -------------- FUNKCJE --------------- #
 # ------- (DECLARING FUNCTIONS) -------- #
@@ -138,7 +140,6 @@ class AudioProcessing:
         last_6_sec = song[-6000:]
         last_6_sec.export(recording, format="wav")
         
-
     #// TODO wiecej informacji o autorze, o stworzeniu programu itp...
     #* Wstep, podstawowe informacje
     def introduction():
@@ -300,10 +301,10 @@ class AudioProcessing:
     # TODO Wiecej w pliku .txt
     # TODO Sprawdzenie czy maksymalna wartosc przypada na mniej wiecej 100Hz
     #* Analizowanie audio
-    def processing(name):
+    def processing(name, przelicznik):
         AudioProcessing.clear()
         print(' > Przetwarzanie . . . \nAby wykonac nastepna akcje prosze zamknac okno Matplotlib ')
-
+            
         # Zadeklarowanie wielkosci okna do wyswietlania
         T_PLOT.preplot(rows=4, cols=2)
         
@@ -325,8 +326,12 @@ class AudioProcessing:
         ###* Rysowanie czarnych wykresow do analizy
         ## Pierwszy czarny wykres
         # Pomocnicze zmienne do analizy
+        PROG = 1.65
+        PROG_DET = PROG*0.3
+
         przec, x_pop, przec_sum, przec_kontr = 0, 0, 0, 0
         suma, aud_sum, i, k = 0, 0, 0, 0
+        x_pop_pop = 0
         taba = []
         tabb = []
 
@@ -352,18 +357,18 @@ class AudioProcessing:
             k += 1
         # Srednia sygnalu
         aprox = suma / audio.ys.size
-        aprox = 1.55 * aprox
+        aprox = PROG * aprox
         # Rysowanie sygnalu
         T_PLOT.Plot(tabb, taba, color='black') 
 
         # Wypisanie sredniej i wielkosci audio (ilosc probek - calosc)
-        print("\nAprox +1: " + str(aprox))
+        print("\nAprox: " + str(aprox))
         print(" Size: " + str(audio.ys.size) + '\n')
 
         # Rysowanie sredniej na wykresie - zielony kolor
         for y in tabb:
             T_PLOT.Plot(y, aprox, color='green', marker='_')
-
+            T_PLOT.Plot(y, PROG_DET*aprox*przelicznik, color='darkred', marker='_')
 
         # Przechodzenie przez wszystkie wartosci
         # Pozniej nastepuje zliczanie punktow ktore przechodza przez srednia - aprox
@@ -372,28 +377,31 @@ class AudioProcessing:
         # >= 6  niepoprawne wartosci - wystepuje szum zaklocajacy
         for x in taba:
             # Gdy wykres przecina sie rosnac
-            if ((x_pop < aprox) and (x > aprox)):
+            if ((x_pop <= aprox and x_pop_pop <= aprox) and (x > aprox)):
                 przec += 1
                 przec_sum+=1
             # Gdy wykres przecina sie malejac
-            elif((x_pop > aprox) and (x < aprox)):
+            elif((x_pop >= aprox and x_pop_pop >= aprox) and (x < aprox)):
                 przec += 1
                 przec_sum+=1
             x_pop = x
+            x_pop_pop = x_pop
 
             # Gdy spelnione sa dwa warunki, to jest ilosc przeciec jest wieksza, badz
-            # rowna niz 4 i jest mniejsza od parametru (aby oddzielic kolejne cykle)
-            if (przec >= 4 and x <= 0.1*aprox):
+            # rowna 2 i jest mniejsza od parametru (aby oddzielic kolejne cykle)
+            if (przec >= 2 and x <= PROG_DET*aprox*przelicznik):
+            #if (przec >= 4 and x <= PROG*0.1*aprox):
                 print(' 01 Przeciecia w jednym uderzeniu: ' + str(przec))
                 # Zmienna pomocnicza - kontrolna
                 przec_kontr += przec 
 
-                # Gdy wystepuje wiecej niz 4 przeciecia (inaczej niz norma)
-                if (przec > 4):
+                # Gdy wystepuje wiecej niz 2 przeciecia (inaczej niz norma)
+                if (przec > 2):
                     print(" > Uwaga tutaj prawdopodobnie wystepuja szumy")
 
                 przec = 0
-
+        
+        print(PROG_DET*aprox*przelicznik)
         # Wypisywanie ilosc przeciec i liczby kontrolnej
         # Gdy obydwie liczby sie zgadzaja, program zlicza wszystkie uderzenia
         # i dziala prawidlowo        
@@ -403,6 +411,7 @@ class AudioProcessing:
         # Pomocnicze zmienne do analizy
         # Wyzerowanie wartosci
         przec, x_pop, przec_sum, przec_kontr = 0, 0, 0, 0
+        x_pop_pop = 0
         suma, aud_sum, i, k = 0, 0, 0, 0
         taba = []
         tabb = []
@@ -425,32 +434,35 @@ class AudioProcessing:
 
             k += 1
         aprox = suma / audio2.ys.size
-        aprox = 1.55 * aprox
+        aprox = PROG * aprox
         T_PLOT.Plot(tabb, taba, color='black')  
 
         # Rysowanie sredniej na wykresie - zielony kolor
         for y in tabb:
             T_PLOT.Plot(y, aprox, color='green', marker='_') 
+            T_PLOT.Plot(y, PROG_DET*aprox, color='darkred', marker='_')
 
         # Przechodzenie przez wszystkie wartosci
         for x in taba:
-            if ((x_pop <= aprox) and (x > aprox)):
+            if ((x_pop <= aprox and x_pop_pop <= aprox) and (x > aprox)):
                 przec += 1
                 przec_sum +=1
-            elif((x_pop >= aprox) and (x < aprox)):
+            elif((x_pop >= aprox and x_pop_pop >= aprox) and (x < aprox)):
                 przec += 1
                 przec_sum += 1
             x_pop = x
+            x_pop_pop = x_pop
 
-            if (przec >= 4 and x <= 0.1*aprox):
+            if (przec >= 2 and x <= PROG_DET*aprox):
                 print(' 02 Przeciecia w jednym uderzeniu: ' + str(przec))
                 przec_kontr += przec 
 
-                if (przec > 4):
+                if (przec > 2):
                     print(" > Uwaga tutaj prawdopodobnie wystepuja szumy")
                 
                 przec = 0
             
+        print(aprox)
         print('Przeciecia 2: ' + str(przec_sum) + '\n  Kontrolnie: ' + str(przec_kontr) + '\n')    
 
         #* =====================================================================================
@@ -589,6 +601,16 @@ def main():
                             name = name + ".wav"
 
                     file = open(name, 'rb')
+
+                    f_rec = input('\n Czy plik zostal nagrany? (Y/n)')
+
+                    if f_rec == 'Y' or f_rec == 'y':
+                        przelicznik = 1.7
+                    elif f_rec == 'n' or f_rec == 'N':
+                        przelicznik = 1
+                    else:
+                        print(" Podaj poprawna opcje ")
+
                     AudioProcessing.clear()
                     break
                 except OSError:
@@ -605,7 +627,7 @@ def main():
         elif choose =='3':
             if name != "":
                 AudioProcessing.clear()
-                AudioProcessing.processing(name)
+                AudioProcessing.processing(name, przelicznik)
             else:
                 print("Nie wczytano pliku\n")
 
