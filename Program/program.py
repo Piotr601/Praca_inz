@@ -21,28 +21,23 @@
 # // that
 # -------------------------------------- # 
 
-import threading
-import time
-import math
-
+# Nagrywanie
 import pyaudio
 import wave
 
+# Filtrowanie
 import numpy as np
 from pydub import AudioSegment
 from scipy.io import wavfile
-from matplotlib import pyplot as plt
-from array import *
-from os import system, name
-from numpy.lib.function_base import average
+from scipy.signal import butter, lfilter
 
-import noisereduce as nr
+# Analizowanie
 import thinkdsp as T_DSP
 import thinkplot as T_PLOT
 
-from scipy.signal import butter, filtfilt, lfilter
-import scipy.signal as sig
-from tkinter import *
+# Podstawowe
+from array import *
+from os import system
 
 # -------------------------------------- #
 # -------------- PARAMETRY ------------- #
@@ -57,6 +52,8 @@ A_end = 6
 # srednich wykresow - szare wykresy w analizie
 l_probek = 500
 
+# Przelicznik sluzacy jako mnoznik wybierany
+# przy wczytywaniu pliku.
 przelicznik = 0
 
 # -------------------------------------- #
@@ -293,15 +290,18 @@ class AudioProcessing:
         audio_spectrum.plot(color='darkblue')
 
         T_PLOT.show()
+
+        print(' Pomyslnie przefiltrowano plik: ' + name)
+        print(' Nowy plik ma nazwe: ' + NOWY_PLIK_WAVE)
+        print('- - - - - - - - - - - - - - - - - - - - - - -')
         
-   
-    # TODO Wykonac analizowanie w zaleznosci od czestotliwosci
-    # TODO Srednia z przedzialu 0 - 200 Hz, rysowanie i znalezienie
-    # TODO pewnej zaleznosci, by to wykorzystac pozniej
-    # TODO Wiecej w pliku .txt
-    # TODO Sprawdzenie czy maksymalna wartosc przypada na mniej wiecej 100Hz
     #* Analizowanie audio
     def processing(name, przelicznik):
+
+        # Punkty do zliczania szansy na szumy
+        POINTS = 0
+        POINTS_ALL = 0
+
         AudioProcessing.clear()
         print(' > Przetwarzanie . . . \nAby wykonac nastepna akcje prosze zamknac okno Matplotlib ')
             
@@ -357,7 +357,9 @@ class AudioProcessing:
             k += 1
         # Srednia sygnalu
         aprox = suma / audio.ys.size
+        # Srednia powiekszona o prog
         aprox = PROG * aprox
+
         # Rysowanie sygnalu
         T_PLOT.Plot(tabb, taba, color='black') 
 
@@ -373,8 +375,8 @@ class AudioProcessing:
         # Przechodzenie przez wszystkie wartosci
         # Pozniej nastepuje zliczanie punktow ktore przechodza przez srednia - aprox
         # Zwracana jest ilosc przechodzenia w jednym cyklu
-        # =  4  poprawna wartosc
-        # >= 6  niepoprawne wartosci - wystepuje szum zaklocajacy
+        # =  2  poprawna wartosc
+        # >= 2  niepoprawne wartosci - wystepuje szum zaklocajacy
         for x in taba:
             # Gdy wykres przecina sie rosnac
             if ((x_pop <= aprox and x_pop_pop <= aprox) and (x > aprox)):
@@ -390,23 +392,31 @@ class AudioProcessing:
             # Gdy spelnione sa dwa warunki, to jest ilosc przeciec jest wieksza, badz
             # rowna 2 i jest mniejsza od parametru (aby oddzielic kolejne cykle)
             if (przec >= 2 and x <= PROG_DET*aprox*przelicznik):
-            #if (przec >= 4 and x <= PROG*0.1*aprox):
                 print(' 01 Przeciecia w jednym uderzeniu: ' + str(przec))
                 # Zmienna pomocnicza - kontrolna
                 przec_kontr += przec 
 
                 # Gdy wystepuje wiecej niz 2 przeciecia (inaczej niz norma)
                 if (przec > 2):
-                    print(" > Uwaga tutaj prawdopodobnie wystepuja szumy")
-
+                    print(" > Uwaga tutaj wystepuja nieprawidlowosci.")
+                    POINTS += 2
+                    if (przec > 6):
+                        print(" > Uwaga wystepuja szumy! ")
+                        POINTS += 9
+                    if (przec > 4):
+                        print(" > Uwaga prawdopodobnie wystepuja szumy")
+                        POINTS += 3
+                POINTS_ALL += 14
                 przec = 0
         
-        print(PROG_DET*aprox*przelicznik)
         # Wypisywanie ilosc przeciec i liczby kontrolnej
         # Gdy obydwie liczby sie zgadzaja, program zlicza wszystkie uderzenia
         # i dziala prawidlowo        
+        print(PROG_DET*aprox*przelicznik)
         print('Przeciecia 1: ' + str(przec_sum) + '\n  Kontrolnie: ' + str(przec_kontr) + '\n')      
 
+        #* =====================================================================================
+        # *08 Wykres
         ## Drugi czarny wykres
         # Pomocnicze zmienne do analizy
         # Wyzerowanie wartosci
@@ -416,8 +426,6 @@ class AudioProcessing:
         taba = []
         tabb = []
 
-        #* =====================================================================================
-        # *08 Wykres
         T_PLOT.subplot(8)
         for x in audio2.ys:
             suma += abs(x)
@@ -458,7 +466,11 @@ class AudioProcessing:
                 przec_kontr += przec 
 
                 if (przec > 2):
-                    print(" > Uwaga tutaj prawdopodobnie wystepuja szumy")
+                    print(" > Uwaga tutaj wystepuja nieprawidlowosci.")
+                    if (przec > 6):
+                        print(" > Uwaga wystepuja szumy! ")
+                    elif (przec > 4):
+                        print(" > Uwaga prawdopodobnie wystepuja szumy")
                 
                 przec = 0
             
@@ -468,36 +480,58 @@ class AudioProcessing:
         #* =====================================================================================
         # *03 Wykres
         # Rysowanie spektrum wczytanego audio
+
+        NORMA_MAX = 100000
+        NORMA_AVG = 4000
+
         T_PLOT.subplot(3)
         T_PLOT.config(xlim=[0, 1000], ylabel="Amplitude", xlabel="Frequency [Hz]")
         audio_spectrum=audio.make_spectrum()
         audio_spectrum.plot(color='darkblue')
 
-        # Maksymalna wartość Amplitudy w Hz
-        # print(' Avarage: ' + str(abs(average(audio_spectrum.hs))))
-
         # Policzenie sredniej czestotliwosci
-        k = 0
+        k,i = 0, 0
         plot_sum = 0
         tabc = []
 
         for x in audio_spectrum.fs:
             if (x<=200):
-                plot_sum = plot_sum + abs(audio_spectrum.hs[k])
+                if abs(audio_spectrum.hs[k]) >= 500:
+                    plot_sum = plot_sum + abs(audio_spectrum.hs[k])
+                    i += 1
                 tabc.append(k)
                 k += 1
 
         # Wyswietlenie sredniej czestotliwosci
         freq_avg = plot_sum/k
         freq_max = abs(max(audio_spectrum.hs))
-        print(' Poniższe wartosci badamy w przedziale 0-200 Hz')
-        print(' 01 Srednia czestotliwosc: ' + str(freq_avg))
+        print('\n 01 Srednia czestotliwosc: ' + str(freq_avg))
         print(' 01 Maksymalna czestotliwosc: ' + str(freq_max))
 
-        # Przelicznik maksymalna czestosliwosc do sredniej
-        conv_factor = freq_max/freq_avg
-        print(' 01 Przelicznik: ' + str(conv_factor))
-        
+        # Norma czestotliwosc SREDNIA
+        if(freq_avg > NORMA_AVG):
+            print(" [-] Czestotliwosc srednia POZA NORMA ")
+            POINTS += 10
+            if(freq_avg > NORMA_AVG + 500):
+                POINTS += 20
+            if(freq_avg > NORMA_AVG + 1000):
+                POINTS += 40
+        elif(freq_avg <= NORMA_AVG):
+            print(" [+] Czestotliwosc srednia w normie ")
+
+        # Norma czestotliwosc MAX
+        if(freq_max > NORMA_MAX):
+            print(" [-] Czestotliwosc maksymalna POZA NORMA ")
+            POINTS += 10
+            if(freq_max > NORMA_MAX + 1000):
+                POINTS += 20
+            if(freq_max > NORMA_MAX + 2000):
+                POINTS += 40
+        elif(freq_max <= NORMA_MAX):
+            print(" [+] Czestotliwosc maksymalna w normie ")
+
+        POINTS_ALL += 140
+
         # *05 Wykres
         # Rysowanie spektrum z filtrem dolnoprzepustowym
         T_PLOT.subplot(5)
@@ -508,6 +542,7 @@ class AudioProcessing:
         # Rysowanie sredniej na wykresie - czerwony kolor
         for y in tabc:
             T_PLOT.Plot(y, freq_avg, color='red', marker='_')
+            T_PLOT.Plot(y, freq_max, color='darkgreen', marker ='_')
 
         #* =====================================================================================
         # *04 Wykres
@@ -517,30 +552,36 @@ class AudioProcessing:
         audio2_spectrum=audio2.make_spectrum()
         audio2_spectrum.plot(color='darkred')
 
-        # Maksymalna wartość Amplitudy w H
-        # print(' --------------------------')
-        # print(' Avarage: ' + str(abs(average(audio2_spectrum.hs))))
-
         # Policzenie sredniej czestotliwosci
-        k = 0
+        k, i = 0, 0
         plot_sum1 = 0
         tabd = []
 
         for x in audio2_spectrum.fs:
             if (x<=200):
-                plot_sum1 = plot_sum1 + abs(audio2_spectrum.hs[k])
+                if abs(audio2_spectrum.hs[k]) >= 500:
+                    plot_sum1 = plot_sum1 + abs(audio2_spectrum.hs[k])
+                    i += 1
                 tabd.append(k)
                 k += 1
 
         # Wyswietlenie sredniej czestotliwosci
         freq_avg1 = plot_sum1/k
         freq_max1 = abs(max(audio2_spectrum.hs))
-        print(' 02 Srednia czestotliwosc: ' + str(freq_avg1))
+        print('\n 02 Srednia czestotliwosc: ' + str(freq_avg1))
         print(' 02 Maksymalna czestotliwosc: ' + str(freq_max1))
 
-        # Przelicznik maksymalna czestosliwosc do sredniej
-        conv_factor1 = freq_max1/freq_avg1
-        print(' 02 Przelicznik: ' + str(conv_factor1))
+        # Norma czestotliwosc SREDNIA
+        if(freq_avg1 > NORMA_AVG):
+            print(" [-] Czestotliwosc srednia POZA NORMA ")
+        elif(freq_avg1 <= NORMA_AVG):
+            print(" [+] Czestotliwosc srednia w normie ")
+
+        # Norma czestotliwosc MAX
+        if(freq_max1 > NORMA_MAX):
+            print(" [-] Czestotliwosc maksymalna POZA NORMA ")
+        elif(freq_max1 <= NORMA_MAX):
+            print(" [+] Czestotliwosc maksymalna w normie ")
 
         #// Jeśli amplituda jest wieksza niz 125% bazowego to mozliwe szumy
         #//if (abs(max(audio_spectrum.hs)) / abs(max(audio2_spectrum.hs))) > 1.25:
@@ -556,17 +597,63 @@ class AudioProcessing:
         # Rysowanie sredniej na wykresie - czerwony kolor
         for y in tabd:
             T_PLOT.Plot(y, freq_avg1, color='red', marker='_')
+            T_PLOT.Plot(y, freq_max1, color='darkgreen', marker ='_')
+
+        # Oblicza punkty i ich stosunek wzgledem siebie
+        result = round(POINTS/POINTS_ALL*100, 4)
+        print("\n Uzyskany wynik: " + str(POINTS) + "/" + str(POINTS_ALL) + " pkt")
+        print(" Stosunek punktowy: " + str(result))
+
+        # Prawdopodobienstwo wystepowania szumow biorac pod uwage
+        # ich stosunek pomnozony o 100
+        if(result <= 100.0):
+            # 100 - zaszumiony sygnal
+            if(result == 100.0):
+                print("\n Zaszumiony sygnal. Ta probka nie nadaje sie do analizy.")
+            # 100 <-> 30 
+            if(result >= 30.0 and result < 100.0):
+                print("\n Wystepuja szumy ")
+            # 30 <-> 20
+            if(result >= 20.0 and result < 30.0):
+                print("\n Wystepuje duze prawdopodobienstwo szumow ")
+            # 20 <-> 15
+            if(result >= 15.0 and result < 20.0):
+                print("\n Wystepuje średnie prawdopodobienstwo szumow ")
+            # 15 <-> 12
+            if(result >= 12.0 and result < 15.0):
+                print("\n Wystepuje male prawdopodobienstwo szumow. Mozliwe drobne zaklocenia.")
+            # 12 <-> 5
+            if(result >= 5.0 and result < 12.0):
+                print("\n Wystepuje znikome prawdopodobienstwo szumow. Mozliwe drobne zaklocenia.")
+            # 5 <-> 0
+            if(result > 0.0 and result < 5.0):
+                print("\n Nie wystepuja szumy")
+            # 0 - brak szumow
+            if(result == 0.0):
+                print("\n Brak szumow, idealny sygnal.")
 
         #* Wyswietla wszystkie wykresy
         T_PLOT.show()
 
-
-#// window = Tk()
 # -------------------------------------- #
 # ----- FUNKCJA MAIN - GŁÓWNA PĘTLA ---- #
 # ----------- (MAIN FUNCTION) ---------- #
 # -------------------------------------- #
 
+# FUnkcja do wyswietlania menu
+def menu():
+    print("\n#==================================#")
+    print("|           M  E  N  U             |")
+    print("#==================================#")
+    print("| 1) Wczytanie pliku               |")
+    print("| 2) Szybki podglad                |")
+    print("| 3) Analiza pliku                 |")
+    print("| 4) Filtracja                     |")
+    print("| 5) Nagrywanie dzwieku            |")
+    print("| 6) Wyjscie                       |")
+    print("#==================================#")
+
+    
 # Glowna funkcja
 def main():
     name = ""
@@ -577,21 +664,27 @@ def main():
     while True:
         if name:
             print("\n[@] Aktualnie wczytany plik: " + name)
+            if przelicznik == 1.7:
+                print("[@] Plik nagrany w programie")
+            if przelicznik == 0.7:
+                print("[ ] Plik nie zostal nagrany w programie")
         else:
-            print("\n[] Aktualnie wczytany plik: " + name)
-        choose = input("\nCo chcialbys zrobic?\n 1) Wczytanie pliku\n 2) Szybki podglad\n 3) Analiza pliku\n 4) Filtracja\n 5) Nagrywanie dzwieku\n 6) Wyjscie\n Twoj wybor: ")
+            print("\n[ ] Aktualnie wczytany plik: " + name)
+        
+        menu()
+        choose = input("\n > Twoj wybor: ")
         
         # Wybranie i wczytywanie sciezki audio do analizy
         if choose =='1':
             # Zapobieganie wpisaniu zlej nazwy oraz braku wybrania audio do analizy
             while True:
                 try:
-                    print("\nDostepne pliki:")
+                    print("\n o Dostepne pliki:")
                     # Wyswietlenie wszystkich dostepnych audio w programie
                     _ = system('ls -m *.wav')
-                    print("\nDostepne pliki po filtracji:")
+                    print("\n o Dostepne pliki po filtracji:")
                     _ = system('ls -m f_*.wav')
-                    name = input("\nPodaj nazwę pliku: ")
+                    name = input("\n > Podaj nazwę pliku: ")
                     
                     # Zapobieganie wpisaniu nazwy audio bez formatu
                     for x in name:
@@ -602,14 +695,21 @@ def main():
 
                     file = open(name, 'rb')
 
-                    f_rec = input('\n Czy plik zostal nagrany? (Y/n)')
+                    correct = 0
 
-                    if f_rec == 'Y' or f_rec == 'y':
-                        przelicznik = 1.7
-                    elif f_rec == 'n' or f_rec == 'N':
-                        przelicznik = 1
-                    else:
-                        print(" Podaj poprawna opcje ")
+                    while correct == 0:
+                        f_rec = input('\n >> Czy plik zostal nagrany? (Y/n): ')
+                        if f_rec == 'Y' or f_rec == 'y':
+                            przelicznik = 1.7
+                            correct = 1
+                        elif f_rec == 'n' or f_rec == 'N':
+                            przelicznik = 0.7
+                            correct = 1
+                        else:
+                            print(" Podaj poprawna opcje !")
+                            correct = 0
+                        
+                    correct = 0
 
                     AudioProcessing.clear()
                     break
@@ -620,6 +720,7 @@ def main():
         elif choose =='2':
             if name != "":
                 AudioProcessing.preview(name)
+                AudioProcessing.clear()
             else:
                 print("Nie wczytano pliku\n")
 
@@ -634,6 +735,7 @@ def main():
         # Filtracja szumów
         elif choose =='4':
             if name != "":
+                AudioProcessing.clear()
                 AudioProcessing.filtration(name)
             else:
                 print("Nie wczytano pliku\n")
@@ -641,6 +743,7 @@ def main():
         # Wyjscie z programu
         elif choose =='5':
             AudioProcessing.record()
+            AudioProcessing.clear()
 
         elif choose =='6':
             exit(0)
@@ -648,12 +751,6 @@ def main():
         else:
             AudioProcessing.clear()
             print(" Bledny wybor, wybierz ponownie! ")    
-
-    #//window.title("Program do analizy")
-    #//window.geometry("1000x800+50+50")
-    #//window.resizable(False, False)
-    #//window.mainloop()
-    #//x.join()
 
 # Wywolanie funkcji
 if __name__ == '__main__':
