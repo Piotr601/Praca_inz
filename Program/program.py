@@ -14,11 +14,11 @@
 
 # -------------------------------------- #
 #            BETTER COMMENTS             #
-# * HIGHLIGHTED
-# ! Alert ...
-# ? Should ....
-# TODO sth
-# // that
+# * HIGHLIGHTED                          #
+# ! Alert ...                            #
+# ? Should ....                          #
+# TODO sth                               #
+# // that                                #
 # -------------------------------------- # 
 
 # Nagrywanie
@@ -44,16 +44,16 @@ from os import system
 # ------------ (PARAMETERS) ------------ #
 # -------------------------------------- #
 
-# Start audio na pierwszym wykresie 
+# Przedzial czasowy wyswietlany na wykresach
+# Start audio na wykresie 
 A_start = 0
-# Koniec audio na pierwszym wykresie
+# Koniec audio na wykresie
 A_end = 6
-# Liczba probek brana pod uwage w liczeniu
-# srednich wykresow - szare wykresy w analizie
-l_probek = 500
 
-# Przelicznik sluzacy jako mnoznik wybierany
-# przy wczytywaniu pliku.
+# Liczba probek brana pod uwage w liczeniusrednich wykresow
+# - szare wykresy w analizie - 
+l_probek = 500
+# Przelicznik sluzacy jako mnoznik wybierany przy wczytywaniu pliku.
 przelicznik = 0
 
 # -------------------------------------- #
@@ -61,19 +61,44 @@ przelicznik = 0
 # ------- (DECLARING FUNCTIONS) -------- #
 # -------------------------------------- #
 
-#
-# Klasa AudioProcessing sluzaca do obslugi przetwarzania audio
-#
-# Metody:
-#  - clear
-#  - introduction
-#  - preview
-#  - filtration 
-#  - processing
-#
-# W argumentach kilku funkcji przekazywana jest nazwa pliku
-# audio wczytana w menu wyboru
-#
+#--------------------------------------------------------------------#
+#                                                                    #
+# Klasa AudioProcessing sluzaca do obslugi przetwarzania audio       #
+#                                                                    #
+# Metody:                                                            #
+#  - clear                                                           #
+#       odpowiada za czyszczenie ekranu terminala po wywolaniu       #
+#  - record                                                          #
+#       sluzy do nagrywania pliku, a nastepnie jest on zapisywany    #
+#       do folderu z plikiem z nazwa wpisana przez uzytkownika       #
+#  - introduction                                                    #
+#       wyswietla podstawowe informacje takie jak autora, temat      #
+#       pracy oraz kierunek i uczelnie autora                        #
+#  - preview                                                         #
+#       funkcja sluzaca do podgladu zalodowanego pliku, zostala      #
+#       stworzona po to by szybko podejrzec co jest w pliku, to      #
+#       znaczy jak wygladaja wykresy: amplitudowo-czasowy oraz       #
+#       amplitudowo-czestotliwosciowy                                #
+#  - filtration                                                      #
+#       funkcja sluzaca do filtrowania nagranych audio poprzez       #
+#       metode record, zastosowane sa 3 filtry, kolejno:             #
+#       band, low, band aby zniwelowac szumy i uwydatnic             #
+#       dzwiek bicia serca                                           #
+#  - processing                                                      #
+#       glowna funkcja sluzaca analizie danych, to w niej odbywa     #
+#       sie badanie i wyswietlanie pozniejszego wyniku, jest to      #
+#       jedna z najdluzszych i najwazniejszych funkcji programu      #
+#                                                                    #
+# Argumenty:                                                         #
+#   - name                                                           #
+#       przekazuje do metod nazwe pliku (zalodowanego)               #
+#   - przelicznik                                                    #
+#       przekazuje informacje o zalodowanym pliku, czy               #
+#       zostal on nagrany, czy nie. Dzieki temu mozna dobrac         #
+#       odpowiednie parametry do analizy, nie jest jednak to         #
+#       konieczne. Calosc powinna dzialac dla parametru 'n' - 0.7    #
+#                                                                    #
+#--------------------------------------------------------------------#
 
 class AudioProcessing:
     #* Funkcja uzywana w celu czyszczenia ekranu
@@ -137,7 +162,6 @@ class AudioProcessing:
         last_6_sec = song[-6000:]
         last_6_sec.export(recording, format="wav")
         
-    #// TODO wiecej informacji o autorze, o stworzeniu programu itp...
     #* Wstep, podstawowe informacje
     def introduction():
         print('#======================================================================#')
@@ -583,10 +607,6 @@ class AudioProcessing:
         elif(freq_max1 <= NORMA_MAX):
             print(" [+] Czestotliwosc maksymalna w normie ")
 
-        #// Jeśli amplituda jest wieksza niz 125% bazowego to mozliwe szumy
-        #//if (abs(max(audio_spectrum.hs)) / abs(max(audio2_spectrum.hs))) > 1.25:
-        #//    print("MOŻLIWE SZUMY!!")
-
         # *06 Wykres
         # Rysowanie spektrum z filtrem dolnoprzepustowym
         T_PLOT.subplot(6)
@@ -653,7 +673,6 @@ def menu():
     print("| 6) Wyjscie                       |")
     print("#==================================#")
 
-    
 # Glowna funkcja
 def main():
     name = ""
